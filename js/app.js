@@ -68,10 +68,11 @@ export function renderConcursoSelector() {
 
 export async function selecionarConcurso(id) {
   State.concursoAtivo = State.concursos.find(c => c.id === id) || null;
-  localStorage.setItem('concursoAtivoId', id);
+  localStorage.setItem('concursoAtivoId', id || '');
   renderConcursoSelector();
-  // notificar páginas
   document.dispatchEvent(new CustomEvent('concursoChanged', { detail: id }));
+  // atualizar home se estiver visível
+  import('./page-home.js').then(m => m.renderHome());
 }
 
 // ── dropdown de concursos ──────────────────────────

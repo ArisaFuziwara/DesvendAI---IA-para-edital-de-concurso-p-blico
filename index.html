@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="theme-color" content="#ffffff"/>
+  <title>Edital Scout</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<!-- ───────── HEADER ───────────────────────────── -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M2.5 8.5L6.5 12.5L13.5 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="logo-name">Edital<strong>Scout</strong></span>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item" data-page="home">Início</button>
+      <button class="nav-item" data-page="analisar">Analisar</button>
+      <button class="nav-item" data-page="materias">Matérias</button>
+      <button class="nav-item" data-page="cronograma">Cronograma</button>
+    </nav>
+
+    <div class="header-right">
+      <span class="uso-badge" id="uso-badge">— análises</span>
+      <div class="concurso-selector-wrap">
+        <button class="concurso-header-btn" id="concurso-header-btn">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <rect x="1" y="1" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M4 6.5H9M4 4.5H9M4 8.5H7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          <span id="concurso-nome-header">Selecionar concurso</span>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="concurso-dropdown" id="concurso-dropdown">
+          <div class="concurso-dropdown-list" id="concurso-dropdown-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ───────── MAIN ─────────────────────────────── -->
+<main class="main">
+
+  <!-- HOME -->
+  <div id="page-home" class="page">
+    <div class="home-grid">
+      <div class="home-left">
+        <div class="hero-card">
+          <div class="hero-bg"></div>
+          <p class="hero-eyebrow">Concursos públicos</p>
+          <h1 class="hero-title">Cole o edital.<br><em>A gente desvenda.</em></h1>
+          <p class="hero-desc">IA que lê, hierarquiza e organiza qualquer edital. Cronograma personalizado, termômetro de progresso e muito mais.</p>
+          <div class="hero-btns">
+            <button class="btn-primary" id="btn-ir-analisar">Analisar edital →</button>
+            <button class="btn-outline" id="btn-novo-concurso-home">+ Novo concurso</button>
+          </div>
+        </div>
+
+        <!-- Countdown -->
+        <div class="section-label">Próxima prova</div>
+        <div id="countdown-block" class="countdown-block"></div>
+
+        <!-- Progresso global -->
+        <div class="progresso-card">
+          <div class="progresso-header">
+            <span class="section-label" style="margin:0">Progresso geral</span>
+            <span class="progresso-pct-label" id="progresso-pct">0% do edital dominado</span>
+          </div>
+          <div class="progresso-track"><div class="progresso-fill" id="progresso-barra"></div></div>
+        </div>
+      </div>
+
+      <div class="home-right">
+        <div class="stats-grid">
+          <div class="stat-card"><span class="stat-val" id="stat-materias">—</span><span class="stat-lbl">Matérias</span></div>
+          <div class="stat-card"><span class="stat-val" id="stat-topicos">—</span><span class="stat-lbl">Tópicos</span></div>
+          <div class="stat-card"><span class="stat-val" id="stat-dominados">—</span><span class="stat-lbl">Dominado</span></div>
+          <div class="stat-card"><span class="stat-val" id="stat-editais">—</span><span class="stat-lbl">Concursos</span></div>
+        </div>
+
+        <div class="section-label">Meus concursos</div>
+        <div id="concursos-cards" class="concursos-cards"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALISAR -->
+  <div id="page-analisar" class="page">
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">Analisar edital</h2>
+        <p class="page-sub">Cole os tópicos — a IA detecta matérias e monta a hierarquia T1 / T2 / T3.</p>
+      </div>
+    </div>
+
+    <div class="input-card">
+      <div class="input-card-top">
+        <span class="input-card-label">Tópicos do edital</span>
+        <span class="char-count" id="char-count">0 caracteres</span>
+      </div>
+      <textarea id="topicos-input" placeholder="Cole aqui os tópicos do edital. Pode ser qualquer formato — com numeração, travessão, parênteses, do jeito que vier no PDF.
+
+Exemplos:
+1. Direito Constitucional
+   1.1 Princípios Fundamentais
+      1.1.1 Dignidade da pessoa humana
+      1.1.2 Cidadania e soberania
+   1.2 Direitos e Garantias Fundamentais
+2. Língua Portuguesa
+   2.1 Concordância verbal e nominal
+   2.2 Regência verbal
+Noções de Informática: Word, Excel, Internet, Segurança"></textarea>
+      <div class="input-footer">
+        <label class="check-row">
+          <input type="checkbox" id="check-add-banco" checked/>
+          <span>Adicionar tópicos ao banco de matérias</span>
+        </label>
+        <button class="btn-primary" id="btn-analisar">Analisar →</button>
+      </div>
+    </div>
+
+    <div id="loading-block" class="loading-block hidden">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+      <p class="loading-msg" id="loading-msg">Lendo o edital...</p>
+    </div>
+
+    <div id="results-block" class="hidden">
+      <div class="results-bar">
+        <div class="results-meta" id="results-meta"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-sm" id="btn-copiar-resumo">Copiar texto</button>
+          <button class="btn-sm btn-accent-sm" id="btn-salvar-hist">Salvar</button>
+        </div>
+      </div>
+      <div id="results-cards"></div>
+    </div>
+  </div>
+
+  <!-- MATÉRIAS -->
+  <div id="page-materias" class="page">
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">Banco de matérias</h2>
+        <p class="page-sub">Clique em qualquer tópico para editar, mudar de matéria ou ajustar a hierarquia.</p>
+      </div>
+      <div class="page-header-right">
+        <button class="btn-sm" id="btn-export-json">Exportar JSON</button>
+        <button class="btn-primary btn-sm-h" id="btn-nova-materia">+ Nova matéria</button>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <div class="search-wrap">
+        <svg class="search-ic" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="6" cy="6" r="4.5" stroke="#9CA3AF" stroke-width="1.3"/>
+          <path d="M9.5 9.5L12 12" stroke="#9CA3AF" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        <input type="text" id="search-mat" class="search-input" placeholder="Buscar matéria ou tópico..."/>
+      </div>
+      <div class="status-pills">
+        <button class="status-pill active" data-s="all">Todos</button>
+        <button class="status-pill" data-s="nao_estudado">Não estudado</button>
+        <button class="status-pill" data-s="estudando">Estudando</button>
+        <button class="status-pill" data-s="dominado">Dominado</button>
+      </div>
+      <select id="sort-mat" class="sort-sel">
+        <option value="nome">A – Z</option>
+        <option value="topicos">Mais tópicos</option>
+        <option value="dom">Mais dominado</option>
+      </select>
+    </div>
+
+    <div id="materias-list" class="materias-list"></div>
+    <div id="materias-empty" class="empty-state hidden">
+      <div class="empty-ico">📚</div>
+      <p class="empty-title">Nenhuma matéria ainda</p>
+      <p class="empty-sub">Analise um edital para preencher automaticamente.</p>
+      <button class="btn-primary" onclick="import('./js/app.js').then(m=>m.goPage('analisar'))">Analisar edital</button>
+    </div>
+  </div>
+
+  <!-- CRONOGRAMA -->
+  <div id="page-cronograma" class="page">
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">Cronograma de estudos</h2>
+        <p class="page-sub">A IA cria um plano personalizado com base no seu tempo disponível e na data da prova.</p>
+      </div>
+      <button class="btn-sm" id="btn-reimprimir" style="display:none">🖨 Imprimir</button>
+    </div>
+
+    <!-- Form de configuração -->
+    <div id="cron-form" class="cron-form-card">
+      <div class="cron-form-grid">
+        <div class="cron-field">
+          <label class="field-label">Horas de estudo por dia</label>
+          <input type="number" id="cron-horas" class="field-input" value="2" min="1" max="12"/>
+        </div>
+        <div class="cron-field">
+          <label class="field-label">Dias da semana que estudo</label>
+          <div class="dias-grid">
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Segunda" checked/><span>Seg</span></label>
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Terça" checked/><span>Ter</span></label>
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Quarta" checked/><span>Qua</span></label>
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Quinta" checked/><span>Qui</span></label>
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Sexta" checked/><span>Sex</span></label>
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Sábado"/><span>Sáb</span></label>
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Domingo"/><span>Dom</span></label>
+          </div>
+        </div>
+        <div class="cron-field cron-field-full">
+          <label class="field-label">Matérias que já tenho base (a IA dará menos tempo)</label>
+          <div id="domina-list" class="domina-list"></div>
+        </div>
+      </div>
+      <div class="cron-form-footer">
+        <div id="cron-loading" class="loading-block hidden" style="padding:0;flex-direction:row;gap:10px">
+          <div class="loading-dots" style="gap:4px"><span></span><span></span><span></span></div>
+          <span class="loading-msg" style="font-size:13px">Gerando cronograma...</span>
+        </div>
+        <button class="btn-primary" id="btn-gerar-cronograma">Gerar cronograma →</button>
+      </div>
+    </div>
+
+    <!-- Resultado -->
+    <div id="cron-resultado" class="hidden">
+      <div class="cron-resumo-grid">
+        <div class="cron-stat"><span class="cron-stat-val" id="cron-total-semanas">—</span><span class="cron-stat-lbl">semanas</span></div>
+        <div class="cron-stat"><span class="cron-stat-val" id="cron-horas-semana">—</span><span class="cron-stat-lbl">por semana</span></div>
+        <div class="cron-stat"><span class="cron-stat-val" id="cron-total-horas">—</span><span class="cron-stat-lbl">total de horas</span></div>
+        <div class="cron-dica" id="cron-dica-banca"></div>
+      </div>
+      <div id="cron-semanas-grid" class="cron-semanas-grid"></div>
+      <div class="cron-actions">
+        <button class="btn-sm" onclick="document.getElementById('cron-form').classList.remove('hidden');document.getElementById('cron-resultado').classList.add('hidden')">Refazer cronograma</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ───────── MODAL: CONCURSO ──────────────────── -->
+<div id="modal-concurso" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-head"><h3 class="modal-title" id="mc-title">Novo concurso</h3><button class="modal-x" id="mc-close">✕</button></div>
+    <div class="modal-body">
+      <label class="field-label">Nome do concurso *</label>
+      <input type="text" id="mc-nome" class="field-input" placeholder="Ex: Prefeitura de São Paulo 2025"/>
+      <label class="field-label" style="margin-top:14px">Banca organizadora</label>
+      <input type="text" id="mc-banca" class="field-input" placeholder="Ex: VUNESP, CESPE, FCC..."/>
+      <label class="field-label" style="margin-top:14px">Cargo</label>
+      <input type="text" id="mc-cargo" class="field-input" placeholder="Ex: Analista Administrativo"/>
+      <label class="field-label" style="margin-top:14px">Data da prova</label>
+      <input type="date" id="mc-data" class="field-input"/>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-danger-sm" id="mc-del" style="display:none">Excluir</button>
+      <button class="btn-primary" id="mc-save">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── MODAL: TÓPICO ────────────────────── -->
+<div id="modal-topico" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-head"><h3 class="modal-title">Editar tópico</h3><button class="modal-x" id="mt-close">✕</button></div>
+    <div class="modal-body">
+      <label class="field-label">Texto</label>
+      <input type="text" id="mt-texto" class="field-input"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+        <div>
+          <label class="field-label">Matéria</label>
+          <select id="mt-materia" class="field-input"></select>
+        </div>
+        <div>
+          <label class="field-label">Nível (hierarquia)</label>
+          <select id="mt-nivel" class="field-input">
+            <option value="1">T1 — Título</option>
+            <option value="2">T2 — Subtítulo</option>
+            <option value="3">T3 — Sub-subtítulo</option>
+          </select>
+        </div>
+      </div>
+      <label class="field-label" style="margin-top:16px">Status de estudo</label>
+      <div class="status-picker">
+        <button class="status-btn" data-st="nao_estudado">○ Não estudado</button>
+        <button class="status-btn" data-st="estudando">◐ Estudando</button>
+        <button class="status-btn" data-st="dominado">✓ Dominado</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-danger-sm" id="mt-del">Excluir tópico</button>
+      <button class="btn-primary" id="mt-save">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── MODAL: MATÉRIA ───────────────────── -->
+<div id="modal-materia" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-head"><h3 class="modal-title" id="mm-title">Nova matéria</h3><button class="modal-x" id="mm-close">✕</button></div>
+    <div class="modal-body">
+      <label class="field-label">Nome da matéria</label>
+      <input type="text" id="mm-nome" class="field-input" placeholder="Ex: Direito Constitucional"/>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-danger-sm" id="mm-del" style="display:none">Excluir</button>
+      <button class="btn-primary" id="mm-save">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── TOAST ─────────────────────────────── -->
+<div id="toast" class="toast"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -13,6 +13,40 @@
 </head>
 <body>
 
+<!-- ───────── TELA DE LOGIN ───────────────────── -->
+<div id="tela-login" class="login-overlay hidden">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-mark">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M2.5 8.5L6.5 12.5L13.5 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="logo-name">Edital<strong>Scout</strong></span>
+    </div>
+    <h2 class="login-title">Bem-vinda de volta</h2>
+    <p class="login-sub">Entre para continuar seus estudos.</p>
+    <form id="login-form" class="login-form">
+      <div class="login-field">
+        <label class="field-label">Usuário</label>
+        <input type="text" id="login-user" class="field-input" placeholder="seu usuário" autocomplete="username" required/>
+      </div>
+      <div class="login-field">
+        <label class="field-label">Senha</label>
+        <div class="senha-wrap">
+          <input type="password" id="login-senha" class="field-input" placeholder="••••••••" autocomplete="current-password" required/>
+          <button type="button" id="login-olho" class="olho-btn">👁</button>
+        </div>
+      </div>
+      <p id="login-erro" class="login-erro hidden"></p>
+      <button type="submit" class="btn-primary login-submit">Entrar →</button>
+    </form>
+  </div>
+</div>
+
+<!-- ───────── APP ───────────────────────────────── -->
+<div id="app-wrapper" class="hidden">
+
 <!-- ───────── HEADER ───────────────────────────── -->
 <header class="header">
   <div class="header-inner">
@@ -373,6 +407,9 @@ Ex:
 <!-- ───────── TOAST ─────────────────────────────── -->
 <div id="toast" class="toast"></div>
 
+</div><!-- /app-wrapper -->
+
+<script type="module" src="js/login.js"></script>
 <script type="module" src="js/app.js"></script>
 </body>
 </html>

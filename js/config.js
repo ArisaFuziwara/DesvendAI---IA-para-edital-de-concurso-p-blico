@@ -1,5 +1,4 @@
 export const CONFIG = {
-  limiteAnalisesMes: 3,
   firebase: {
     apiKey: "AIzaSyCn6c3WgB2TfOj3tqXMiCdoL_83licJFm8",
     authDomain: "edital-scout-c69d5.firebaseapp.com",

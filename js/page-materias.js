@@ -47,11 +47,7 @@ export function initMaterias() {
 
 // ── render principal ───────────────────────────────
 export function renderMaterias() {
-  const c = State.concursoAtivo;
-  const lista = State.materias.filter(m => {
-    if (!c) return true; // sem concurso ativo: mostra todas
-    return !m.concursoId || m.concursoId === '' || m.concursoId === c.id;
-  })
+  const lista = [...State.materias]
     .map(m => ({ ...m, topicos: filtrarTopicos(m.topicos) }))
     .filter(m => {
       if (!buscaStr) return true;
@@ -190,18 +186,19 @@ function renderTopicosFlat(topicos, materiaId) {
   });
 
   function renderNo(t, depth = 0) {
-    const indent = depth * 18;
+    const nivel = t.nivel || 1;
+    const indent = (nivel - 1) * 20 + 16;
     const statusIcon = { dominado: '✓', estudando: '◐', nao_estudado: '○' }[t.status] || '○';
     const statusClass = t.status || 'nao_estudado';
+    const nivelClass = nivel === 1 ? 'topico-n1' : nivel === 2 ? 'topico-n2' : 'topico-n3';
 
     return `
-      <div class="topico-row status-${statusClass}"
+      <div class="topico-row status-${statusClass} ${nivelClass}"
            data-topico-id="${t.id}" data-materia-id="${materiaId}"
-           style="padding-left:${indent + 16}px">
+           style="padding-left:${indent}px">
         <button class="status-cycle-btn status-icon-${statusClass}"
                 data-mid="${materiaId}" data-tid="${t.id}"
                 title="Clique para mudar status">${statusIcon}</button>
-        <span class="nivel-tag n${t.nivel || 1}">T${t.nivel || 1}</span>
         <span class="topico-texto">${t.texto}</span>
         <span class="topico-edit-hint">editar ›</span>
       </div>
@@ -354,12 +351,10 @@ async function salvarMateria() {
   if (!nome) { showToast('Informe o nome.','warn'); return; }
   const c = State.concursoAtivo;
 
-if (_editMateriaId) {
-    const concursoId = document.getElementById('mm-concurso')?.value || '';
+  if (_editMateriaId) {
     const mat = State.materias.find(m => m.id === _editMateriaId);
     mat.nome = nome;
-    mat.concursoId = concursoId;
-    await updateMateria(_editMateriaId, { nome, concursoId });
+    await updateMateria(_editMateriaId, { nome });
   } else {
     const cor = CORES[State.materias.length % CORES.length];
     const ref = await addMateria({ concursoId: c?.id || '', nome, cor, topicos: [] });

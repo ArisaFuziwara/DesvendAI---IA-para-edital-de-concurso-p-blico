@@ -30,9 +30,18 @@ export function initMaterias() {
   setupModalMateria();
 
   document.addEventListener('concursoChanged', () => {
+    // resetar filtro ao trocar concurso
+    filtroStatus = 'all';
+    buscaStr = '';
+    document.querySelectorAll('.status-pill').forEach(x => x.classList.remove('active'));
+    document.querySelector('.status-pill[data-s="all"]')?.classList.add('active');
+    const searchEl = document.getElementById('search-mat');
+    if (searchEl) searchEl.value = '';
     renderMaterias();
   });
 
+  // resetar estado ao entrar na página
+  filtroStatus = 'all';
   renderMaterias();
 }
 

@@ -331,3 +331,57 @@ textarea::placeholder{color:var(--t3)}
   .filters-bar{flex-direction:column;align-items:stretch}
 }
 @media print{.header,.nav,.filters-bar,.cron-form-card,.cron-actions,.btn-sm{display:none!important}.cron-semanas-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ── Analisar v2 ─────────────────────────────────── */
+.anal-step-card{background:var(--s);border:1px solid var(--b);border-radius:var(--rl);padding:1.5rem;box-shadow:var(--sh);margin-bottom:1rem;display:flex;gap:1.25rem;align-items:flex-start}
+.anal-step-num{width:28px;height:28px;border-radius:50%;background:var(--text);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.anal-step-body{flex:1;min-width:0}
+.anal-step-title{font-size:15px;font-weight:600;margin-bottom:.75rem}
+.anal-step-title-row{display:flex;align-items:center;gap:12px;margin-bottom:.4rem}
+.anal-step-hint{font-size:12.5px;color:var(--t3);margin-bottom:1rem;line-height:1.6}
+.parse-count{font-size:12px;font-weight:500;padding:3px 10px;border-radius:20px;background:var(--blue-bg);color:var(--blue)}
+
+.anal-mat-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.mat-placeholder{font-size:13.5px;color:var(--t3);flex:1}
+.mat-selecionada-info{display:flex;align-items:center;gap:8px;flex:1}
+.mat-sel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.mat-sel-nome{font-size:14px;font-weight:600}
+.mat-sel-count{font-size:12px;color:var(--t3)}
+.anal-mat-btns{display:flex;gap:8px;flex-shrink:0}
+
+.mat-dropdown{position:absolute;top:calc(100% + 6px);left:0;background:var(--s);border:1px solid var(--b);border-radius:var(--rl);box-shadow:var(--shm);min-width:240px;z-index:200;overflow:hidden;max-height:260px;overflow-y:auto}
+.mat-dd-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;background:none;border:none;font-family:var(--font);font-size:13.5px;cursor:pointer;transition:background .1s;text-align:left}
+.mat-dd-item:hover{background:var(--s2)}
+.mat-dd-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mat-dd-count{margin-left:auto;font-size:11.5px;color:var(--t3)}
+
+/* existentes */
+.edit-existentes{background:var(--s2);border:1px solid var(--b);border-radius:var(--r);padding:1rem;margin-bottom:1rem}
+.edit-sec-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:.6rem;display:flex;align-items:center;gap:8px}
+.edit-sec-count{background:var(--b);border-radius:20px;padding:1px 8px;font-size:11px;color:var(--t2)}
+.existentes-list{display:flex;flex-direction:column;gap:2px;max-height:200px;overflow-y:auto}
+.exist-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;color:var(--t3);border-bottom:1px solid var(--b)}
+.exist-row:last-child{border-bottom:none}
+
+/* novos editáveis */
+.edit-novos-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:.6rem}
+.topicos-editaveis{display:flex;flex-direction:column;gap:2px;margin-bottom:1rem;min-height:60px;border:1.5px dashed var(--b);border-radius:var(--r);padding:6px}
+
+.topico-edit-row{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--s);border:1px solid var(--b);border-radius:8px;cursor:grab;transition:all .15s;user-select:none}
+.topico-edit-row:hover{border-color:var(--b2);box-shadow:var(--sh)}
+.topico-edit-row.dragging{opacity:.4;cursor:grabbing}
+.topico-edit-row.drag-over{border-color:var(--blue);border-style:solid;background:var(--blue-bg)}
+
+.drag-handle{color:var(--t3);font-size:14px;cursor:grab;flex-shrink:0;line-height:1}
+.nivel-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0;cursor:pointer;transition:all .15s;letter-spacing:.04em}
+.nivel-tag:hover{transform:scale(1.1)}
+.n1.nivel-tag{background:#EFF6FF;color:#1D4ED8}
+.n2.nivel-tag{background:#F5F3FF;color:#5B21B6}
+.n3.nivel-tag{background:#ECFDF5;color:#065F46}
+
+.topico-edit-texto{flex:1;font-size:13px;color:var(--text);outline:none;border:none;background:transparent;line-height:1.5;min-width:0}
+.topico-edit-texto:focus{color:var(--blue)}
+.topico-del-btn{background:none;border:none;color:var(--t3);font-size:12px;cursor:pointer;padding:2px 5px;border-radius:4px;flex-shrink:0;transition:all .1s}
+.topico-del-btn:hover{background:var(--red-bg);color:var(--red)}
+
+.anal-step3-footer{display:flex;justify-content:space-between;align-items:center;padding-top:.75rem;border-top:1px solid var(--b)}

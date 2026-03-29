@@ -39,7 +39,7 @@ export function initMaterias() {
 // ── render principal ───────────────────────────────
 export function renderMaterias() {
   const c = State.concursoAtivo;
-  const lista = (c ? State.materias.filter(m => m.concursoId === c.id) : State.materias)
+  const lista = [...State.materias]
     .map(m => ({ ...m, topicos: filtrarTopicos(m.topicos) }))
     .filter(m => {
       if (!buscaStr) return true;

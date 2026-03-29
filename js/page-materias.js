@@ -216,10 +216,22 @@ async function ciclicStatusTopico(materiaId, topicoId) {
   const top = mat.topicos.find(t => t.id === topicoId);
   if (!top) return;
   const idx = STATUS_CYCLE.indexOf(top.status || 'nao_estudado');
-  top.status = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+  const novoStatus = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+  top.status = novoStatus;
+  // propagar para todos os filhos (diretos e indiretos)
+  propagarStatus(mat.topicos, topicoId, novoStatus);
   await updateMateria(materiaId, { topicos: mat.topicos });
   renderMaterias();
   import('./page-home.js').then(m => m.renderHome());
+}
+
+function propagarStatus(topicos, parentId, status) {
+  topicos.forEach(t => {
+    if (t.parentId === parentId) {
+      t.status = status;
+      propagarStatus(topicos, t.id, status); // recursivo
+    }
+  });
 }
 
 // ── modal de tópico ────────────────────────────────
@@ -279,11 +291,13 @@ async function salvarTopico() {
 
   if (materiaId === novaMateriaId) {
     velha.topicos[idxTop] = topicoAtualizado;
+    propagarStatus(velha.topicos, topicoId, status);
     await updateMateria(materiaId, { topicos: velha.topicos });
   } else {
     velha.topicos.splice(idxTop, 1);
     await updateMateria(materiaId, { topicos: velha.topicos });
     nova.topicos.push(topicoAtualizado);
+    propagarStatus(nova.topicos, topicoId, status);
     await updateMateria(novaMateriaId, { topicos: nova.topicos });
   }
 

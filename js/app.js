@@ -59,8 +59,6 @@ export function goPage(page) {
 
 // ── seletor de concurso no header ──────────────────
 export function renderConcursoSelector() {
-  const sel = document.getElementById('concurso-selector');
-  if (!sel) return;
   const c = State.concursoAtivo;
   const nome = document.getElementById('concurso-nome-header');
   if (nome) nome.textContent = c ? c.nome : 'Selecionar concurso';

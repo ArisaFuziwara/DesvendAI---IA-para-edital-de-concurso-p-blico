@@ -212,10 +212,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   atualizarBadgeUso();
 
   // inicializar páginas
-  initHome();
   initAnalisar();
   initMaterias();
   initCronograma();
+  initHome(); // home por último, já com State.materias preenchido
 
   goPage('home');
 });

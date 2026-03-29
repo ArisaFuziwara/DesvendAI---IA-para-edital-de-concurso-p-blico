@@ -29,9 +29,7 @@ export function initMaterias() {
   setupModalTopico();
   setupModalMateria();
 
-  document.addEventListener('concursoChanged', async () => {
-    const c = State.concursoAtivo;
-    if (c) State.materias = await getMaterias(c.id);
+  document.addEventListener('concursoChanged', () => {
     renderMaterias();
   });
 }
@@ -39,7 +37,7 @@ export function initMaterias() {
 // ── render principal ───────────────────────────────
 export function renderMaterias() {
   const c = State.concursoAtivo;
-  const lista = [...State.materias]
+  const lista = (c ? State.materias.filter(m => m.concursoId === c.id) : State.materias)
     .map(m => ({ ...m, topicos: filtrarTopicos(m.topicos) }))
     .filter(m => {
       if (!buscaStr) return true;
@@ -221,7 +219,6 @@ function abrirModalTopico(materiaId, topicoId) {
   // select de matéria
   const sel = document.getElementById('mt-materia');
   sel.innerHTML = State.materias
-    .filter(m => !State.concursoAtivo || m.concursoId === State.concursoAtivo.id)
     .map(m => `<option value="${m.id}" ${m.id === materiaId ? 'selected' : ''}>${m.nome}</option>`)
     .join('');
 

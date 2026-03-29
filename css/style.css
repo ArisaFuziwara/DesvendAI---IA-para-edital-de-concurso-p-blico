@@ -432,16 +432,19 @@ textarea::placeholder{color:var(--t3)}
 .topico-n2 { background: var(--s2); }
 .topico-n3 { background: var(--s3); }
 
-/* ── Centralizar tela de login ───────────────── */
-.login-page {
-  min-height: 100vh;
+/* ── Centralizar login ───────────────── */
+.login-overlay {
+  position: fixed;
+  inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
+  background: rgba(0,0,0,0.3); /* opcional, dá aquele efeito bonito */
+  z-index: 999;
 }
 
-/* opcional: estilizar o card */
-.login-box {
+.login-card {
   width: 100%;
   max-width: 380px;
+  margin: 0 auto;
 }

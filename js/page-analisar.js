@@ -106,13 +106,27 @@ function processarColagem() {
 
 // ── parser ─────────────────────────────────────────
 function parsearTopicos(texto) {
-  const linhas = texto.split('\n').map(l => l.trim()).filter(Boolean);
-  const tops   = linhas.map(l => ({ id: uid(), texto: limparTexto(l), nivel: detectarNivel(l), status: 'nao_estudado', filhos: [] }))
-                       .filter(t => t.texto);
+  // Se tudo veio numa linha só (sem quebras), quebra automaticamente
+  // antes de cada padrão numérico: "3.1 Texto" → quebra antes do "3.1"
+  let textoProcessado = texto;
+  const temQuebrasDeLinha = (texto.match(/\n/g) || []).length > 2;
 
-  // se tudo nivel 1, tenta inferir por recuo do texto original
+  if (!temQuebrasDeLinha) {
+    // quebra antes de números do tipo: 1. / 1.1 / 1.1.1 / 2. etc
+    textoProcessado = texto
+      .replace(/\s+(\d+\.\d+\.\d+)\s+/g, '\n$1 ')
+      .replace(/\s+(\d+\.\d+)\s+/g,      '\n$1 ')
+      .replace(/\s+(\d+\.)\s+/g,         '\n$1 ');
+  }
+
+  const linhas = textoProcessado.split('\n').map(l => l.trim()).filter(Boolean);
+  const tops   = linhas
+    .map(l => ({ id: uid(), texto: limparTexto(l), nivel: detectarNivel(l), status: 'nao_estudado' }))
+    .filter(t => t.texto);
+
+  // se ainda tudo nivel 1, tenta inferir por recuo
   if (tops.every(t => t.nivel === 1)) {
-    texto.split('\n').filter(l => l.trim()).forEach((l, i) => {
+    textoProcessado.split('\n').filter(l => l.trim()).forEach((l, i) => {
       const esp = l.match(/^(\s+)/)?.[1]?.length || 0;
       if (tops[i]) tops[i].nivel = esp >= 6 ? 3 : esp >= 2 ? 2 : 1;
     });

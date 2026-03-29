@@ -1,272 +1,275 @@
-import { State, uid, norm, showToast, abrirModalConcurso, goPage } from './app.js';
-import { CONFIG } from './config.js';
-import { getMaterias, addMateria, updateMateria, addHistorico, incrementarUso, getUsoMes } from './firebase.js';
-import { CORES } from './app.js';
+import { State, uid, norm, showToast, CORES } from './app.js';
+import { addMateria, updateMateria } from './firebase.js';
 
-let analiseAtual = null;
+// ── estado ─────────────────────────────────────────
+let materiaSelecionada = null; // { id, nome, cor, topicos[] }
+let topicosParsed     = [];   // tópicos da colagem atual
+let dragEl            = null;
+let dragOverEl        = null;
 
-const LOADING_MSGS = [
-  'Lendo o edital...', 'Identificando matérias...', 'Mapeando a hierarquia...',
-  'Classificando tópicos...', 'Quase lá...',
-];
-
+// ── init ───────────────────────────────────────────
 export function initAnalisar() {
-  const input   = document.getElementById('topicos-input');
-  const btnAnal = document.getElementById('btn-analisar');
-  const btnCop  = document.getElementById('btn-copiar-resumo');
-  const btnSal  = document.getElementById('btn-salvar-hist');
-
-  input?.addEventListener('input', () => {
-    document.getElementById('char-count').textContent = `${input.value.length} caracteres`;
-  });
-
-  btnAnal?.addEventListener('click', analisar);
-  btnCop?.addEventListener('click',  copiarResumo);
-  btnSal?.addEventListener('click',  salvarHistorico);
-
-  document.addEventListener('concursoChanged', () => {
-    document.getElementById('results-block')?.classList.add('hidden');
-    analiseAtual = null;
-  });
+  document.getElementById('btn-selecionar-mat')?.addEventListener('click', abrirSeletorMat);
+  document.getElementById('btn-criar-mat-anal')?.addEventListener('click', criarMateria);
+  document.getElementById('btn-processar')?.addEventListener('click', processarColagem);
+  document.getElementById('btn-salvar-final')?.addEventListener('click', salvarFinal);
+  document.getElementById('btn-add-topico-manual')?.addEventListener('click', adicionarManual);
+  document.addEventListener('concursoChanged', resetarPagina);
 }
 
-async function analisar() {
-  const c = State.concursoAtivo;
-  if (!c) {
-    showToast('Selecione ou crie um concurso primeiro.', 'warn');
+function resetarPagina() {
+  materiaSelecionada = null;
+  topicosParsed      = [];
+  document.getElementById('anal-step2').classList.add('hidden');
+  document.getElementById('anal-step3').classList.add('hidden');
+  document.getElementById('mat-selecionada-info').classList.add('hidden');
+  document.getElementById('mat-placeholder').classList.remove('hidden');
+}
+
+// ── STEP 1: selecionar matéria ─────────────────────
+function abrirSeletorMat() {
+  const c    = State.concursoAtivo;
+  const mats = State.materias.filter(m => !c || m.concursoId === c?.id);
+  const dd   = document.getElementById('mat-dropdown');
+
+  if (!mats.length) {
+    showToast('Crie uma matéria primeiro.', 'warn');
     return;
   }
 
+  dd.innerHTML = mats.map(m => `
+    <button class="mat-dd-item" data-id="${m.id}">
+      <div class="mat-dd-dot" style="background:${m.cor}"></div>
+      <span>${m.nome}</span>
+      <span class="mat-dd-count">${m.topicos.length} tópicos</span>
+    </button>`).join('');
+
+  dd.classList.toggle('hidden');
+
+  dd.querySelectorAll('.mat-dd-item').forEach(btn =>
+    btn.addEventListener('click', () => {
+      selecionarMateria(btn.dataset.id);
+      dd.classList.add('hidden');
+    })
+  );
+}
+
+function selecionarMateria(id) {
+  const m = State.materias.find(x => x.id === id);
+  if (!m) return;
+  materiaSelecionada = m;
+
+  document.getElementById('mat-placeholder').classList.add('hidden');
+  const info = document.getElementById('mat-selecionada-info');
+  info.classList.remove('hidden');
+  document.getElementById('mat-sel-dot').style.background  = m.cor;
+  document.getElementById('mat-sel-nome').textContent       = m.nome;
+  document.getElementById('mat-sel-count').textContent      = `${m.topicos.length} tópicos existentes`;
+
+  document.getElementById('anal-step2').classList.remove('hidden');
+  document.getElementById('anal-step3').classList.add('hidden');
+  document.getElementById('char-count').textContent = '0 caracteres';
+  document.getElementById('topicos-input').value = '';
+}
+
+async function criarMateria() {
+  const nome = prompt('Nome da nova matéria:');
+  if (!nome?.trim()) return;
+  const c   = State.concursoAtivo;
+  const cor = CORES[State.materias.length % CORES.length];
+  const ref = await addMateria({ concursoId: c?.id || '', nome: nome.trim(), cor, topicos: [] });
+  const nova = { id: ref.id, concursoId: c?.id || '', nome: nome.trim(), cor, topicos: [] };
+  State.materias.push(nova);
+  selecionarMateria(nova.id);
+  showToast('Matéria criada!', 'success');
+}
+
+// ── STEP 2: colar e processar ──────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('topicos-input')?.addEventListener('input', e => {
+    document.getElementById('char-count').textContent = `${e.target.value.length} caracteres`;
+  });
+});
+
+function processarColagem() {
   const texto = document.getElementById('topicos-input').value.trim();
-  if (!texto) { showToast('Cole os tópicos antes de analisar.', 'warn'); return; }
+  if (!texto) { showToast('Cole os tópicos primeiro.', 'warn'); return; }
+  if (!materiaSelecionada)  { showToast('Selecione uma matéria primeiro.', 'warn'); return; }
 
-  // freemium
-  const uso = await getUsoMes();
-  if (uso >= CONFIG.limiteAnalisesMes) {
-    showToast(`Limite de ${CONFIG.limiteAnalisesMes} análises/mês atingido.`, 'warn');
-    return;
-  }
+  topicosParsed = parsearTopicos(texto);
+  if (!topicosParsed.length) { showToast('Nenhum tópico encontrado.', 'warn'); return; }
 
-  const btnAnal = document.getElementById('btn-analisar');
-  btnAnal.disabled = true;
-  document.getElementById('results-block').classList.add('hidden');
-  document.getElementById('loading-block').classList.remove('hidden');
-
-  let i = 0;
-  const iv = setInterval(() => {
-    document.getElementById('loading-msg').textContent = LOADING_MSGS[i++ % LOADING_MSGS.length];
-  }, 1600);
-
-  try {
-    const prompt = `Você é especialista em concursos públicos brasileiros.
-Analise os tópicos do edital abaixo e retorne uma estrutura hierárquica com matérias e subtópicos.
-
-REGRAS DE HIERARQUIA:
-- Nível 1 (T1): A matéria em si (ex: "Direito Constitucional")
-- Nível 2 (T2): Subtópico / capítulo dentro da matéria (ex: "Direitos Fundamentais")  
-- Nível 3 (T3): Sub-subtópico / item específico (ex: "Direito à vida e à liberdade")
-- Se o edital já tiver numeração (1. → 1.1 → 1.1.1), respeite essa hierarquia
-- Onde não houver numeração, infira pelo contexto e granularidade do assunto
-- Use nomes padronizados para matérias: "Direito Constitucional", "Direito Administrativo", "Língua Portuguesa", "Raciocínio Lógico", "Matemática", "Informática", "Legislação Específica", "Atualidades", etc.
-
-STATUS inicial de todos os tópicos: "nao_estudado"
-
-Responda APENAS JSON válido, sem markdown:
-{
-  "materias": [
-    {
-      "nome": "Nome da Matéria",
-      "topicos": [
-        {
-          "id": "t001",
-          "texto": "texto do tópico",
-          "nivel": 1,
-          "filhos": [
-            {
-              "id": "t002",
-              "texto": "subtópico",
-              "nivel": 2,
-              "filhos": [
-                { "id": "t003", "texto": "sub-subtópico", "nivel": 3, "filhos": [] }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "total_topicos": 42
+  renderStep3();
+  document.getElementById('anal-step3').classList.remove('hidden');
+  document.getElementById('anal-step3').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-Tópicos do edital:
-${texto}`;
+// ── parser ─────────────────────────────────────────
+function parsearTopicos(texto) {
+  const linhas = texto.split('\n').map(l => l.trim()).filter(Boolean);
+  const tops   = linhas.map(l => ({ id: uid(), texto: limparTexto(l), nivel: detectarNivel(l), status: 'nao_estudado', filhos: [] }))
+                       .filter(t => t.texto);
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CONFIG.anthropicKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 8192,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    const data = await res.json();
-    const raw  = data.content.map(b => b.text || '').join('');
-    analiseAtual = JSON.parse(raw.replace(/```json|```/g,'').trim());
-
-    // atribuir IDs únicos se a IA não gerou bem
-    normalizarIds(analiseAtual.materias);
-
-    await incrementarUso();
-    State.usoMes++;
-
-    const addAosBanco = document.getElementById('check-add-banco')?.checked;
-    if (addAosBanco) await mergeNoBanco(analiseAtual.materias, c.id);
-
-    renderAnalise(analiseAtual);
-    document.getElementById('results-block').classList.remove('hidden');
-    atualizarBadgeFreemium();
-
-  } catch (err) {
-    console.error(err);
-    showToast('Erro ao analisar. Verifique sua chave da API.', 'warn');
-  } finally {
-    clearInterval(iv);
-    document.getElementById('loading-block').classList.add('hidden');
-    btnAnal.disabled = false;
-  }
-}
-
-function normalizarIds(materias) {
-  let n = 0;
-  function fix(topicos) {
-    topicos.forEach(t => {
-      t.id = t.id || uid();
-      t.status = t.status || 'nao_estudado';
-      n++;
-      if (t.filhos?.length) fix(t.filhos);
+  // se tudo nivel 1, tenta inferir por recuo do texto original
+  if (tops.every(t => t.nivel === 1)) {
+    texto.split('\n').filter(l => l.trim()).forEach((l, i) => {
+      const esp = l.match(/^(\s+)/)?.[1]?.length || 0;
+      if (tops[i]) tops[i].nivel = esp >= 6 ? 3 : esp >= 2 ? 2 : 1;
     });
   }
-  materias.forEach(m => fix(m.topicos || []));
+  return tops;
 }
 
-async function mergeNoBanco(materias, concursoId) {
-  const existentes = await getMaterias(concursoId);
-
-  for (const m of materias) {
-    let mat = existentes.find(x => norm(x.nome) === norm(m.nome));
-    if (!mat) {
-      const cor = CORES[existentes.length % CORES.length];
-      const flat = flattenTopicos(m.topicos);
-      const ref  = await addMateria({ concursoId, nome: m.nome, cor, topicos: flat });
-      mat = { id: ref.id, concursoId, nome: m.nome, cor, topicos: flat };
-      existentes.push(mat);
-    } else {
-      const novoFlat = flattenTopicos(m.topicos);
-      const existSet = new Set(mat.topicos.map(t => norm(t.texto)));
-      const novos    = novoFlat.filter(t => !existSet.has(norm(t.texto)));
-      if (novos.length > 0) {
-        mat.topicos.push(...novos);
-        await updateMateria(mat.id, { topicos: mat.topicos });
-      }
-    }
-  }
-
-  // Recarregar matérias no state
-  State.materias = await getMaterias(concursoId);
+function detectarNivel(l) {
+  if (/^\s*\d+\.\d+\.\d+/.test(l)) return 3;
+  if (/^\s*\d+\.\d+/.test(l))      return 2;
+  if (/^\s*\d+\./.test(l))         return 1;
+  if (/^\s+[a-z]\)/.test(l))       return 3;
+  if (/^[a-z]\)/.test(l))          return 2;
+  return 1;
 }
 
-// Flatten hierarquia em array flat, preservando nivel e parentId
-function flattenTopicos(topicos, parentId = null) {
-  const result = [];
-  function walk(arr, pid) {
-    arr.forEach(t => {
-      result.push({ id: t.id || uid(), texto: t.texto, nivel: t.nivel, status: t.status || 'nao_estudado', parentId: pid });
-      if (t.filhos?.length) walk(t.filhos, t.id);
-    });
-  }
-  walk(topicos, parentId);
-  return result;
+function limparTexto(l) {
+  return l.replace(/^\d+(\.\d+)*\.?\s*/, '').replace(/^[a-zA-Z]\)\s*/, '').replace(/^[-–—•]\s*/, '').trim();
 }
 
-function renderAnalise(data) {
-  const { materias, total_topicos } = data;
+// ── STEP 3: editor drag-and-drop ───────────────────
+function renderStep3() {
+  const existentes = materiaSelecionada.topicos;
 
-  document.getElementById('results-meta').innerHTML =
-    `<strong>${materias.length}</strong> matérias &nbsp;·&nbsp; <strong>${total_topicos}</strong> tópicos identificados`;
+  // seção de existentes (se tiver)
+  const existentesHtml = existentes.length ? `
+    <div class="edit-existentes">
+      <div class="edit-sec-label">Já salvos nesta matéria <span class="edit-sec-count">${existentes.length}</span></div>
+      <div class="existentes-list">
+        ${existentes.map(t => `
+          <div class="exist-row nivel-${t.nivel}" style="padding-left:${(t.nivel-1)*20+12}px">
+            <span class="nivel-tag n${t.nivel}">T${t.nivel}</span>
+            <span>${t.texto}</span>
+          </div>`).join('')}
+      </div>
+    </div>` : '';
 
-  const container = document.getElementById('results-cards');
-  container.innerHTML = materias.map((m, i) => {
-    const cor = CORES[i % CORES.length];
-    return `
-      <div class="result-card" id="rc-${i}">
-        <div class="result-card-head" onclick="this.closest('.result-card').classList.toggle('open')">
-          <div class="result-card-left">
-            <div class="materia-dot" style="background:${cor}"></div>
-            <span class="result-materia-nome">${m.nome}</span>
-          </div>
-          <div class="result-card-right">
-            <span class="result-badge">${contarTodos(m.topicos)} tópicos</span>
-            <span class="chevron">▾</span>
-          </div>
-        </div>
-        <div class="result-body">
-          ${renderTopicosHierarquicos(m.topicos)}
-        </div>
-      </div>`;
-  }).join('');
+  document.getElementById('existentes-block').innerHTML = existentesHtml;
+
+  // lista editável de novos
+  renderListaEditavel();
 }
 
-function contarTodos(topicos) {
-  let n = 0;
-  function walk(arr) { arr.forEach(t => { n++; if(t.filhos?.length) walk(t.filhos); }); }
-  walk(topicos);
-  return n;
+function renderListaEditavel() {
+  const container = document.getElementById('topicos-editaveis');
+  container.innerHTML = '';
+  topicosParsed.forEach(t => container.appendChild(criarTopicoEl(t)));
+  setupDragDrop(container);
+  document.getElementById('parse-count').textContent =
+    `${topicosParsed.length} tópico${topicosParsed.length !== 1 ? 's' : ''} novos`;
 }
 
-function renderTopicosHierarquicos(topicos, nivel = 1) {
-  return topicos.map(t => `
-    <div class="topico-hier nivel-${t.nivel || nivel}" style="padding-left:${(t.nivel-1)*20 + 18}px">
-      <span class="nivel-badge n${t.nivel}">T${t.nivel}</span>
-      <span class="topico-hier-texto">${t.texto}</span>
-    </div>
-    ${t.filhos?.length ? renderTopicosHierarquicos(t.filhos, nivel+1) : ''}
-  `).join('');
-}
+function criarTopicoEl(t) {
+  const div = document.createElement('div');
+  div.className = `topico-edit-row nivel-${t.nivel}`;
+  div.dataset.id = t.id;
+  div.draggable  = true;
+  div.style.paddingLeft = `${(t.nivel - 1) * 20 + 12}px`;
+  div.innerHTML = `
+    <div class="drag-handle" title="Arrastar">⠿</div>
+    <span class="nivel-tag n${t.nivel}" title="Clique para mudar nível" data-action="nivel">T${t.nivel}</span>
+    <span class="topico-edit-texto" contenteditable="true" data-action="texto">${t.texto}</span>
+    <button class="topico-del-btn" data-action="del" title="Excluir">✕</button>`;
 
-function copiarResumo() {
-  if (!analiseAtual) return;
-  let txt = 'EDITAL ANALISADO\n' + '─'.repeat(30) + '\n\n';
-  analiseAtual.materias.forEach(m => {
-    txt += `${m.nome.toUpperCase()}\n`;
-    function walk(arr, pad = '  ') {
-      arr.forEach(t => {
-        txt += `${pad}${'T'.repeat(t.nivel || 1)} ${t.texto}\n`;
-        if (t.filhos?.length) walk(t.filhos, pad + '  ');
-      });
-    }
-    walk(m.topicos);
-    txt += '\n';
+  // editar texto
+  div.querySelector('[data-action="texto"]').addEventListener('blur', e => {
+    t.texto = e.target.textContent.trim() || t.texto;
   });
-  navigator.clipboard.writeText(txt).then(() => showToast('Copiado!', 'success'));
+
+  // ciclar nível ao clicar no badge
+  div.querySelector('[data-action="nivel"]').addEventListener('click', () => {
+    t.nivel = t.nivel >= 3 ? 1 : t.nivel + 1;
+    div.className = `topico-edit-row nivel-${t.nivel}`;
+    div.style.paddingLeft = `${(t.nivel - 1) * 20 + 12}px`;
+    div.querySelector('[data-action="nivel"]').className = `nivel-tag n${t.nivel}`;
+    div.querySelector('[data-action="nivel"]').textContent = `T${t.nivel}`;
+  });
+
+  // excluir
+  div.querySelector('[data-action="del"]').addEventListener('click', () => {
+    topicosParsed = topicosParsed.filter(x => x.id !== t.id);
+    div.remove();
+    document.getElementById('parse-count').textContent =
+      `${topicosParsed.length} tópico${topicosParsed.length !== 1 ? 's' : ''} novos`;
+  });
+
+  return div;
 }
 
-async function salvarHistorico() {
-  if (!analiseAtual || !State.concursoAtivo) return;
-  const nome = prompt('Nome para esta análise:', '');
-  if (!nome) return;
-  await addHistorico({ concursoId: State.concursoAtivo.id, nome, dados: analiseAtual });
-  showToast('Salvo no histórico!', 'success');
+// ── drag & drop reordenar ──────────────────────────
+function setupDragDrop(container) {
+  container.addEventListener('dragstart', e => {
+    dragEl = e.target.closest('.topico-edit-row');
+    if (dragEl) { dragEl.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+  });
+
+  container.addEventListener('dragend', () => {
+    dragEl?.classList.remove('dragging');
+    dragOverEl?.classList.remove('drag-over');
+    dragEl = dragOverEl = null;
+    // sincronizar ordem com topicosParsed
+    const ids = [...container.querySelectorAll('.topico-edit-row')].map(el => el.dataset.id);
+    topicosParsed.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+  });
+
+  container.addEventListener('dragover', e => {
+    e.preventDefault();
+    const over = e.target.closest('.topico-edit-row');
+    if (!over || over === dragEl) return;
+    dragOverEl?.classList.remove('drag-over');
+    dragOverEl = over;
+    over.classList.add('drag-over');
+
+    const rect = over.getBoundingClientRect();
+    const mid  = rect.top + rect.height / 2;
+    if (e.clientY < mid) container.insertBefore(dragEl, over);
+    else container.insertBefore(dragEl, over.nextSibling);
+  });
+
+  container.addEventListener('dragleave', e => {
+    if (!container.contains(e.relatedTarget)) {
+      dragOverEl?.classList.remove('drag-over');
+      dragOverEl = null;
+    }
+  });
 }
 
-function atualizarBadgeFreemium() {
-  const { atualizarBadgeUso } = window._appFns || {};
-  import('./app.js').then(m => m.atualizarBadgeUso());
+// ── adicionar tópico manual ────────────────────────
+function adicionarManual() {
+  const novo = { id: uid(), texto: 'Novo tópico', nivel: 1, status: 'nao_estudado' };
+  topicosParsed.push(novo);
+  const container = document.getElementById('topicos-editaveis');
+  container.appendChild(criarTopicoEl(novo));
+  setupDragDrop(container);
+  document.getElementById('parse-count').textContent =
+    `${topicosParsed.length} tópico${topicosParsed.length !== 1 ? 's' : ''} novos`;
+}
+
+// ── salvar ─────────────────────────────────────────
+async function salvarFinal() {
+  if (!materiaSelecionada || !topicosParsed.length) {
+    showToast('Nada pra salvar.', 'warn'); return;
+  }
+
+  const existSet = new Set(materiaSelecionada.topicos.map(t => norm(t.texto)));
+  const novos    = topicosParsed.filter(t => !existSet.has(norm(t.texto)));
+
+  materiaSelecionada.topicos.push(...novos);
+  await updateMateria(materiaSelecionada.id, { topicos: materiaSelecionada.topicos });
+
+  showToast(`${novos.length} tópicos salvos na matéria "${materiaSelecionada.nome}"!`, 'success');
+
+  // reset
+  topicosParsed = [];
+  document.getElementById('anal-step3').classList.add('hidden');
+  document.getElementById('anal-step2').classList.add('hidden');
+  document.getElementById('mat-selecionada-info').classList.add('hidden');
+  document.getElementById('mat-placeholder').classList.remove('hidden');
+  materiaSelecionada = null;
 }

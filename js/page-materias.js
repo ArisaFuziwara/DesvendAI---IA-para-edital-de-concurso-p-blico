@@ -287,10 +287,9 @@ async function salvarTopico() {
     await updateMateria(novaMateriaId, { topicos: nova.topicos });
   }
 
-  document.getElementById('modal-topico').classList.add('hidden');
   renderMaterias();
   import('./page-home.js').then(m => m.renderHome());
-  showToast('Tópico salvo!', 'success');
+  showToast('Salvo!', 'success');
 }
 
 async function deletarTopicoModal() {

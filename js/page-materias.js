@@ -38,7 +38,11 @@ export function initMaterias() {
 
 // ── render principal ───────────────────────────────
 export function renderMaterias() {
-  const lista = [...State.materias]
+  const c = State.concursoAtivo;
+  const lista = State.materias.filter(m => {
+    if (!c) return true; // sem concurso ativo: mostra todas
+    return !m.concursoId || m.concursoId === '' || m.concursoId === c.id;
+  })
     .map(m => ({ ...m, topicos: filtrarTopicos(m.topicos) }))
     .filter(m => {
       if (!buscaStr) return true;
@@ -130,6 +134,7 @@ function renderMateriaCard(m) {
           <div class="mat-dot" style="background:${m.cor || '#888'}"></div>
           <div class="mat-info">
             <span class="mat-nome">${m.nome}</span>
+            ${m.concursoId ? `<span class="mat-concurso-badge">${State.concursos.find(c=>c.id===m.concursoId)?.nome || ''}</span>` : '<span class="mat-concurso-badge mat-global-badge">Global</span>'}
             <div class="mat-pills">
               ${dom  ? `<span class="spill dominado">${dom} dominado${dom!==1?'s':''}</span>` : ''}
               ${est  ? `<span class="spill estudando">${est} estudando</span>` : ''}
@@ -315,6 +320,17 @@ function abrirModalMateria(id) {
   document.getElementById('mm-title').textContent = m ? 'Editar matéria' : 'Nova matéria';
   document.getElementById('mm-nome').value = m?.nome || '';
   document.getElementById('mm-del').style.display = m ? 'inline-flex' : 'none';
+
+  // popular select de concursos
+  const sel = document.getElementById('mm-concurso');
+  if (sel) {
+    sel.innerHTML = `<option value="">🌐 Global (todos os concursos)</option>` +
+      State.concursos.map(c =>
+        `<option value="${c.id}" ${m?.concursoId === c.id ? 'selected' : ''}>${c.nome}</option>`
+      ).join('');
+    if (!m?.concursoId) sel.value = '';
+  }
+
   document.getElementById('modal-materia').classList.remove('hidden');
 }
 

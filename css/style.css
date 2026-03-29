@@ -431,3 +431,17 @@ textarea::placeholder{color:var(--t3)}
 .topico-n1 { background: var(--s); }
 .topico-n2 { background: var(--s2); }
 .topico-n3 { background: var(--s3); }
+
+/* ── Centralizar tela de login ───────────────── */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* opcional: estilizar o card */
+.login-box {
+  width: 100%;
+  max-width: 380px;
+}

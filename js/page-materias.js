@@ -354,10 +354,12 @@ async function salvarMateria() {
   if (!nome) { showToast('Informe o nome.','warn'); return; }
   const c = State.concursoAtivo;
 
-  if (_editMateriaId) {
+if (_editMateriaId) {
+    const concursoId = document.getElementById('mm-concurso')?.value || '';
     const mat = State.materias.find(m => m.id === _editMateriaId);
     mat.nome = nome;
-    await updateMateria(_editMateriaId, { nome });
+    mat.concursoId = concursoId;
+    await updateMateria(_editMateriaId, { nome, concursoId });
   } else {
     const cor = CORES[State.materias.length % CORES.length];
     const ref = await addMateria({ concursoId: c?.id || '', nome, cor, topicos: [] });

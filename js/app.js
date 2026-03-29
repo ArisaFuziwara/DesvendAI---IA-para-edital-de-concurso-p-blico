@@ -59,11 +59,11 @@ export function goPage(page) {
 
 // ── seletor de concurso no header ──────────────────
 export function renderConcursoSelector() {
-  const sel = document.getElementById('concurso-selector');
-  if (!sel) return;
   const c = State.concursoAtivo;
   const nome = document.getElementById('concurso-nome-header');
   if (nome) nome.textContent = c ? c.nome : 'Selecionar concurso';
+  const btn = document.getElementById('concurso-header-btn');
+  if (btn) btn.style.color = c ? 'var(--blue)' : '';
 }
 
 export async function selecionarConcurso(id) {
@@ -176,11 +176,7 @@ function setupModalConcurso() {
 
 // ── freemium badge ─────────────────────────────────
 export function atualizarBadgeUso() {
-  const el = document.getElementById('uso-badge');
-  if (!el) return;
-  const restam = CONFIG.limiteAnalisesMes - State.usoMes;
-  el.textContent = `${restam} análise${restam !== 1 ? 's' : ''} restante${restam !== 1 ? 's' : ''}`;
-  el.className = `uso-badge ${restam <= 1 ? 'uso-critico' : ''}`;
+  // badge desativado
 }
 
 // ── bootstrap ──────────────────────────────────────
@@ -209,13 +205,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupConcursoDropdown();
   setupModalConcurso();
   renderConcursoSelector();
-  atualizarBadgeUso();
 
   // inicializar páginas
   initAnalisar();
   initMaterias();
   initCronograma();
-  initHome(); // home por último, já com State.materias preenchido
+  initHome();
 
   goPage('home');
+  
+  // re-renderizar home agora que tudo está carregado
+  const { renderHome } = await import('./page-home.js');
+  renderHome();
 });

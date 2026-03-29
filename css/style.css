@@ -385,3 +385,9 @@ textarea::placeholder{color:var(--t3)}
 .topico-del-btn:hover{background:var(--red-bg);color:var(--red)}
 
 .anal-step3-footer{display:flex;justify-content:space-between;align-items:center;padding-top:.75rem;border-top:1px solid var(--b)}
+
+/* ── Aviso sem concurso ──────────────────────────── */
+.anal-aviso-concurso{text-align:center;padding:4rem 2rem;background:var(--s);border:1.5px dashed var(--b2);border-radius:var(--rl)}
+.anal-aviso-ico{font-size:2.5rem;margin-bottom:1rem}
+.anal-aviso-title{font-size:16px;font-weight:600;margin-bottom:6px}
+.anal-aviso-sub{font-size:14px;color:var(--t2);max-width:380px;margin:0 auto;line-height:1.7}

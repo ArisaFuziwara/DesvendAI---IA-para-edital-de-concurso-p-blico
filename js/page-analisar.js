@@ -14,7 +14,21 @@ export function initAnalisar() {
   document.getElementById('btn-processar')?.addEventListener('click', processarColagem);
   document.getElementById('btn-salvar-final')?.addEventListener('click', salvarFinal);
   document.getElementById('btn-add-topico-manual')?.addEventListener('click', adicionarManual);
-  document.addEventListener('concursoChanged', resetarPagina);
+  document.addEventListener('concursoChanged', () => { resetarPagina(); renderAvisoConcurso(); });
+  renderAvisoConcurso();
+}
+
+function renderAvisoConcurso() {
+  const aviso = document.getElementById('anal-aviso-concurso');
+  const corpo = document.getElementById('anal-corpo');
+  if (!aviso || !corpo) return;
+  if (!State.concursoAtivo) {
+    aviso.classList.remove('hidden');
+    corpo.classList.add('hidden');
+  } else {
+    aviso.classList.add('hidden');
+    corpo.classList.remove('hidden');
+  }
 }
 
 function resetarPagina() {
@@ -28,12 +42,17 @@ function resetarPagina() {
 
 // ── STEP 1: selecionar matéria ─────────────────────
 function abrirSeletorMat() {
-  const c    = State.concursoAtivo;
-  const mats = State.materias.filter(m => !c || m.concursoId === c?.id);
+  if (!State.concursoAtivo) {
+    showToast('Selecione um concurso no menu do topo antes de continuar.', 'warn');
+    return;
+  }
+
+  // mostra TODAS as matérias, independente de concurso
+  const mats = State.materias;
   const dd   = document.getElementById('mat-dropdown');
 
   if (!mats.length) {
-    showToast('Crie uma matéria primeiro.', 'warn');
+    showToast('Nenhuma matéria cadastrada ainda. Crie uma!', 'warn');
     return;
   }
 

@@ -32,12 +32,13 @@ export function initMaterias() {
   document.addEventListener('concursoChanged', () => {
     renderMaterias();
   });
+
+  renderMaterias();
 }
 
 // ── render principal ───────────────────────────────
 export function renderMaterias() {
-  const c = State.concursoAtivo;
-  const lista = (c ? State.materias.filter(m => m.concursoId === c.id) : State.materias)
+  const lista = [...State.materias]
     .map(m => ({ ...m, topicos: filtrarTopicos(m.topicos) }))
     .filter(m => {
       if (!buscaStr) return true;
@@ -70,6 +71,19 @@ export function renderMaterias() {
   );
   container.querySelectorAll('[data-edit-mat]').forEach(btn =>
     btn.addEventListener('click', e => { e.stopPropagation(); abrirModalMateria(btn.dataset.editMat); })
+  );
+  container.querySelectorAll('[data-del-mat]').forEach(btn =>
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const id = btn.dataset.delMat;
+      const mat = State.materias.find(m => m.id === id);
+      if (!confirm(`Excluir "${mat?.nome}" e todos os seus tópicos?`)) return;
+      await deleteMateria(id);
+      State.materias = State.materias.filter(m => m.id !== id);
+      renderMaterias();
+      import('./page-home.js').then(m => m.renderHome());
+      showToast('Matéria excluída.', 'default');
+    })
   );
   container.querySelectorAll('[data-topico-id]').forEach(row =>
     row.addEventListener('click', () => {
@@ -129,7 +143,8 @@ function renderMateriaCard(m) {
             <div class="mat-progress-bar"><div class="mat-progress-fill" style="width:${pct}%"></div></div>
             <span class="mat-pct">${pct}%</span>
           </div>
-          <button class="mat-edit-btn" data-edit-mat="${m.id}">✏</button>
+          <button class="mat-edit-btn mat-lapis" data-edit-mat="${m.id}" title="Editar nome">✏</button>
+          <button class="mat-edit-btn mat-lixeira" data-del-mat="${m.id}" title="Excluir matéria">🗑</button>
           <span class="mat-chevron">▾</span>
         </div>
       </div>

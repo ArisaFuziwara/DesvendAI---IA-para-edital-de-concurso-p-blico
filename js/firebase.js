@@ -36,8 +36,8 @@ export async function deleteConcurso(id) {
 // ── matérias ───────────────────────────────────────
 export async function getMaterias(concursoId) {
   const snap = await getDocs(query(collection(db, C.materias), orderBy('nome')));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
-    .filter(m => m.concursoId === concursoId);
+  const todas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return concursoId ? todas.filter(m => m.concursoId === concursoId) : todas;
 }
 export async function saveMaterias(materias) {
   const promises = materias.map(m => {

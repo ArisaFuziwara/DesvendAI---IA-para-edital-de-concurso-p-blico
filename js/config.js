@@ -1,7 +1,7 @@
 export const CONFIG = {
   // Login — mude para suas credenciais
   loginUser:  'admin',
-  loginSenha: 'edital2025',
+  loginSenha: 'edital2026',
   firebase: {
     apiKey: "AIzaSyCn6c3WgB2TfOj3tqXMiCdoL_83licJFm8",
     authDomain: "edital-scout-c69d5.firebaseapp.com",

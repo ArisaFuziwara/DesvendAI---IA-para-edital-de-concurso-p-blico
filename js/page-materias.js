@@ -126,6 +126,12 @@ function filtrarTopicos(topicos = []) {
   return topicos.filter(t => t.status === filtroStatus);
 }
 
+function renderBadgeConcurso(m) {
+  if (!m.concursoId) return '<span class="mat-concurso-badge mat-global-badge">Global</span>';
+  const c = State.concursos.find(x => x.id === m.concursoId);
+  return '<span class="mat-concurso-badge">' + (c ? c.nome : '') + '</span>';
+}
+
 function renderMateriaCard(m) {
   const total = m.topicos.length;
   const dom   = m.topicos.filter(t => t.status === 'dominado').length;
@@ -143,7 +149,7 @@ function renderMateriaCard(m) {
           <div class="mat-dot" style="background:${m.cor || '#888'}"></div>
           <div class="mat-info">
             <span class="mat-nome">${m.nome}</span>
-            ${m.concursoId ? `<span class="mat-concurso-badge">${State.concursos.find(c=>c.id===m.concursoId)?.nome || ''}</span>` : '<span class="mat-concurso-badge mat-global-badge">Global</span>'}
+            ${renderBadgeConcurso(m)}
             <div class="mat-pills">
               ${dom  ? `<span class="spill dominado">${dom} dominado${dom!==1?'s':''}</span>` : ''}
               ${est  ? `<span class="spill estudando">${est} estudando</span>` : ''}

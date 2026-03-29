@@ -1,4 +1,4 @@
-import { getConcursos, getUsoMes } from './firebase.js';
+import { getConcursos, getMaterias, getUsoMes } from './firebase.js';
 import { initHome } from './page-home.js';
 import { initAnalisar } from './page-analisar.js';
 import { initMaterias } from './page-materias.js';
@@ -59,6 +59,8 @@ export function goPage(page) {
 
 // ── seletor de concurso no header ──────────────────
 export function renderConcursoSelector() {
+  const sel = document.getElementById('concurso-selector');
+  if (!sel) return;
   const c = State.concursoAtivo;
   const nome = document.getElementById('concurso-nome-header');
   if (nome) nome.textContent = c ? c.nome : 'Selecionar concurso';
@@ -187,10 +189,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   window._fb = fb;
 
   // carregar dados iniciais
-  [State.concursos, State.usoMes] = await Promise.all([
+  const [concursos, materias] = await Promise.all([
     getConcursos(),
-    getUsoMes(),
+    getMaterias(null),
   ]);
+  State.concursos = concursos;
+  State.materias  = materias;
 
   // restaurar concurso ativo
   const savedId = localStorage.getItem('concursoAtivoId');

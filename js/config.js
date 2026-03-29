@@ -1,4 +1,4 @@
-export const firebaseConfig = {
+export const CONFIG = {
     apiKey: "AIzaSyCn6c3WgB2TfOj3tqXMiCdoL_83licJFm8",
     authDomain: "edital-scout-c69d5.firebaseapp.com",
     projectId: "edital-scout-c69d5",

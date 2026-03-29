@@ -1,375 +1,378 @@
-import { State, uid, norm, showToast, CORES, goPage } from './app.js';
-import { getMaterias, addMateria, updateMateria, deleteMateria } from './firebase.js';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="theme-color" content="#ffffff"/>
+  <title>Edital Scout</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
 
-let filtroStatus = 'all';
-let buscaStr     = '';
-let sortOpt      = 'nome';
-let modalCtx     = null; // { tipo:'topico'|'materia', materiaId, topicoId }
+<!-- ───────── HEADER ───────────────────────────── -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M2.5 8.5L6.5 12.5L13.5 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="logo-name">Edital<strong>Scout</strong></span>
+    </div>
 
-export function initMaterias() {
-  document.getElementById('search-mat')?.addEventListener('input', e => {
-    buscaStr = e.target.value.toLowerCase();
-    renderMaterias();
-  });
-  document.querySelectorAll('.status-pill').forEach(p =>
-    p.addEventListener('click', () => {
-      document.querySelectorAll('.status-pill').forEach(x => x.classList.remove('active'));
-      p.classList.add('active');
-      filtroStatus = p.dataset.s;
-      renderMaterias();
-    })
-  );
-  document.getElementById('sort-mat')?.addEventListener('change', e => {
-    sortOpt = e.target.value;
-    renderMaterias();
-  });
-  document.getElementById('btn-nova-materia')?.addEventListener('click', () => abrirModalMateria(null));
-  document.getElementById('btn-export-json')?.addEventListener('click', exportarJSON);
+    <nav class="nav">
+      <button class="nav-item" data-page="home">Início</button>
+      <button class="nav-item" data-page="analisar">Analisar</button>
+      <button class="nav-item" data-page="materias">Matérias</button>
+      <button class="nav-item" data-page="cronograma">Cronograma</button>
+    </nav>
 
-  setupModalTopico();
-  setupModalMateria();
+    <div class="header-right">
+      <span class="uso-badge" id="uso-badge">— análises</span>
+      <div class="concurso-selector-wrap">
+        <button class="concurso-header-btn" id="concurso-header-btn">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <rect x="1" y="1" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M4 6.5H9M4 4.5H9M4 8.5H7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          <span id="concurso-nome-header">Selecionar concurso</span>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="concurso-dropdown" id="concurso-dropdown">
+          <div class="concurso-dropdown-list" id="concurso-dropdown-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
 
-  document.addEventListener('concursoChanged', () => {
-    renderMaterias();
-  });
+<!-- ───────── MAIN ─────────────────────────────── -->
+<main class="main">
 
-  renderMaterias();
-}
+  <!-- HOME -->
+  <div id="page-home" class="page">
+    <div class="home-grid">
+      <div class="home-left">
+        <div class="hero-card">
+          <div class="hero-bg"></div>
+          <p class="hero-eyebrow">Concursos públicos</p>
+          <h1 class="hero-title">Cole o edital.<br><em>A gente desvenda.</em></h1>
+          <p class="hero-desc">IA que lê, hierarquiza e organiza qualquer edital. Cronograma personalizado, termômetro de progresso e muito mais.</p>
+          <div class="hero-btns">
+            <button class="btn-primary" id="btn-ir-analisar">Analisar edital →</button>
+            <button class="btn-outline" id="btn-novo-concurso-home">+ Novo concurso</button>
+          </div>
+        </div>
 
-// ── render principal ───────────────────────────────
-export function renderMaterias() {
-  const c = State.concursoAtivo;
-  const lista = State.materias.filter(m => {
-    if (!c) return true; // sem concurso ativo: mostra todas
-    return !m.concursoId || m.concursoId === '' || m.concursoId === c.id;
-  })
-    .map(m => ({ ...m, topicos: filtrarTopicos(m.topicos) }))
-    .filter(m => {
-      if (!buscaStr) return true;
-      return norm(m.nome).includes(norm(buscaStr)) ||
-             m.topicos.some(t => norm(t.texto).includes(norm(buscaStr)));
-    })
-    .sort((a, b) => {
-      if (sortOpt === 'nome')    return a.nome.localeCompare(b.nome);
-      if (sortOpt === 'topicos') return b.topicos.length - a.topicos.length;
-      if (sortOpt === 'dom')     return b.topicos.filter(t=>t.status==='dominado').length -
-                                        a.topicos.filter(t=>t.status==='dominado').length;
-      return 0;
-    });
+        <!-- Countdown -->
+        <div class="section-label">Próxima prova</div>
+        <div id="countdown-block" class="countdown-block"></div>
 
-  const container = document.getElementById('materias-list');
-  const emptyEl   = document.getElementById('materias-empty');
+        <!-- Progresso global -->
+        <div class="progresso-card">
+          <div class="progresso-header">
+            <span class="section-label" style="margin:0">Progresso geral</span>
+            <span class="progresso-pct-label" id="progresso-pct">0% do edital dominado</span>
+          </div>
+          <div class="progresso-track"><div class="progresso-fill" id="progresso-barra"></div></div>
+        </div>
+      </div>
 
-  if (lista.length === 0) {
-    container.innerHTML = '';
-    emptyEl?.classList.remove('hidden');
-    return;
-  }
-  emptyEl?.classList.add('hidden');
+      <div class="home-right">
+        <div class="stats-grid">
+          <div class="stat-card"><span class="stat-val" id="stat-materias">—</span><span class="stat-lbl">Matérias</span></div>
+          <div class="stat-card"><span class="stat-val" id="stat-topicos">—</span><span class="stat-lbl">Tópicos</span></div>
+          <div class="stat-card"><span class="stat-val" id="stat-dominados">—</span><span class="stat-lbl">Dominado</span></div>
+          <div class="stat-card"><span class="stat-val" id="stat-editais">—</span><span class="stat-lbl">Concursos</span></div>
+        </div>
 
-  container.innerHTML = lista.map(m => renderMateriaCard(m)).join('');
+        <div class="section-label">Meus concursos</div>
+        <div id="concursos-cards" class="concursos-cards"></div>
+      </div>
+    </div>
+  </div>
 
-  // eventos dos cards
-  container.querySelectorAll('.mat-head').forEach(h =>
-    h.addEventListener('click', () => h.closest('.mat-card').classList.toggle('open'))
-  );
-  container.querySelectorAll('[data-edit-mat]').forEach(btn =>
-    btn.addEventListener('click', e => { e.stopPropagation(); abrirModalMateria(btn.dataset.editMat); })
-  );
-  container.querySelectorAll('[data-del-mat]').forEach(btn =>
-    btn.addEventListener('click', async e => {
-      e.stopPropagation();
-      const id = btn.dataset.delMat;
-      const mat = State.materias.find(m => m.id === id);
-      if (!confirm(`Excluir "${mat?.nome}" e todos os seus tópicos?`)) return;
-      await deleteMateria(id);
-      State.materias = State.materias.filter(m => m.id !== id);
-      renderMaterias();
-      import('./page-home.js').then(m => m.renderHome());
-      showToast('Matéria excluída.', 'default');
-    })
-  );
-  container.querySelectorAll('[data-topico-id]').forEach(row =>
-    row.addEventListener('click', () => {
-      const mid = row.dataset.materiaId;
-      const tid = row.dataset.topicoId;
-      abrirModalTopico(mid, tid);
-    })
-  );
-  container.querySelectorAll('.status-cycle-btn').forEach(btn =>
-    btn.addEventListener('click', async e => {
-      e.stopPropagation();
-      const mid = btn.dataset.mid;
-      const tid = btn.dataset.tid;
-      await ciclicStatusTopico(mid, tid);
-    })
-  );
-  container.querySelectorAll('[data-add-topico]').forEach(btn =>
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      adicionarTopico(btn.dataset.addTopico);
-    })
-  );
-}
+  <!-- ANALISAR -->
+  <div id="page-analisar" class="page">
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">Adicionar tópicos</h2>
+        <p class="page-sub">Selecione a matéria, cole o conteúdo do edital e organize arrastando.</p>
+      </div>
+    </div>
 
-function filtrarTopicos(topicos = []) {
-  if (filtroStatus === 'all') return topicos;
-  return topicos.filter(t => t.status === filtroStatus);
-}
+    <!-- Aviso: sem concurso -->
+    <div id="anal-aviso-concurso" class="anal-aviso-concurso hidden">
+      <div class="anal-aviso-ico">🎯</div>
+      <p class="anal-aviso-title">Nenhum concurso selecionado</p>
+      <p class="anal-aviso-sub">Selecione ou crie um concurso no menu do topo para começar a adicionar tópicos.</p>
+    </div>
 
-function renderMateriaCard(m) {
-  const total = m.topicos.length;
-  const dom   = m.topicos.filter(t => t.status === 'dominado').length;
-  const est   = m.topicos.filter(t => t.status === 'estudando').length;
-  const nao   = m.topicos.filter(t => !t.status || t.status === 'nao_estudado').length;
-  const pct   = total > 0 ? Math.round((dom/total)*100) : 0;
-
-  // agrupar por nível para exibição hierárquica
-  const topicosHtml = renderTopicosFlat(m.topicos, m.id);
-
-  return `
-    <div class="mat-card" id="mcard-${m.id}">
-      <div class="mat-head">
-        <div class="mat-head-left">
-          <div class="mat-dot" style="background:${m.cor || '#888'}"></div>
-          <div class="mat-info">
-            <span class="mat-nome">${m.nome}</span>
-            ${m.concursoId ? `<span class="mat-concurso-badge">${State.concursos.find(c=>c.id===m.concursoId)?.nome || ''}</span>` : '<span class="mat-concurso-badge mat-global-badge">Global</span>'}
-            <div class="mat-pills">
-              ${dom  ? `<span class="spill dominado">${dom} dominado${dom!==1?'s':''}</span>` : ''}
-              ${est  ? `<span class="spill estudando">${est} estudando</span>` : ''}
-              ${nao  ? `<span class="spill nao-estudado">${nao} não estudado${nao!==1?'s':''}</span>` : ''}
-              ${!total ? '<span class="spill">Sem tópicos</span>' : ''}
+    <div id="anal-corpo">
+    <!-- STEP 1: selecionar matéria -->
+    <div class="anal-step-card">
+      <div class="anal-step-num">1</div>
+      <div class="anal-step-body">
+        <div class="anal-step-title">Selecione a matéria</div>
+        <div class="anal-mat-row">
+          <div id="mat-placeholder" class="mat-placeholder">Nenhuma matéria selecionada</div>
+          <div id="mat-selecionada-info" class="mat-selecionada-info hidden">
+            <div class="mat-sel-dot" id="mat-sel-dot"></div>
+            <span class="mat-sel-nome" id="mat-sel-nome"></span>
+            <span class="mat-sel-count" id="mat-sel-count"></span>
+          </div>
+          <div class="anal-mat-btns">
+            <div style="position:relative">
+              <button class="btn-primary" id="btn-selecionar-mat">Selecionar →</button>
+              <div id="mat-dropdown" class="mat-dropdown hidden"></div>
             </div>
+            <button class="btn-outline" id="btn-criar-mat-anal">+ Nova matéria</button>
           </div>
         </div>
-        <div class="mat-head-right">
-          <div class="mat-progress-wrap">
-            <div class="mat-progress-bar"><div class="mat-progress-fill" style="width:${pct}%"></div></div>
-            <span class="mat-pct">${pct}%</span>
+      </div>
+    </div>
+
+    <!-- STEP 2: colar conteúdo -->
+    <div class="anal-step-card hidden" id="anal-step2">
+      <div class="anal-step-num">2</div>
+      <div class="anal-step-body">
+        <div class="anal-step-title">Cole o conteúdo do edital para esta matéria</div>
+        <div class="input-card" style="margin-bottom:0">
+          <div class="input-card-top">
+            <span class="input-card-label">Tópicos</span>
+            <span class="char-count" id="char-count">0 caracteres</span>
           </div>
-          <button class="mat-edit-btn mat-lapis" data-edit-mat="${m.id}" title="Editar nome">✏</button>
-          <button class="mat-edit-btn mat-lixeira" data-del-mat="${m.id}" title="Excluir matéria">🗑</button>
-          <span class="mat-chevron">▾</span>
+          <textarea id="topicos-input" placeholder="Cole aqui os tópicos desta matéria. Pode ter numeração, recuo, qualquer formato.
+
+Ex:
+1. Princípios Fundamentais
+   1.1 Dignidade da pessoa humana
+   1.2 Cidadania e soberania
+2. Direitos e Garantias Fundamentais
+   2.1 Direitos individuais
+   2.2 Direitos coletivos"></textarea>
+          <div class="input-footer">
+            <span></span>
+            <button class="btn-primary" id="btn-processar">Processar →</button>
+          </div>
         </div>
       </div>
-      <div class="mat-body">
-        ${topicosHtml}
-        <div class="mat-body-footer">
-          <button class="btn-sm" data-add-topico="${m.id}">+ Adicionar tópico</button>
+    </div>
+
+    <!-- STEP 3: editor drag-and-drop -->
+    <div class="anal-step-card hidden" id="anal-step3">
+      <div class="anal-step-num">3</div>
+      <div class="anal-step-body">
+        <div class="anal-step-title-row">
+          <span class="anal-step-title">Organize e revise</span>
+          <span class="parse-count" id="parse-count"></span>
+        </div>
+        <p class="anal-step-hint">Arraste para reordenar · Clique no <strong>T1/T2/T3</strong> para mudar o nível · Clique no texto para editar</p>
+
+        <!-- existentes -->
+        <div id="existentes-block"></div>
+
+        <!-- novos editáveis -->
+        <div class="edit-novos-label">Novos tópicos a adicionar</div>
+        <div id="topicos-editaveis" class="topicos-editaveis"></div>
+
+        <div class="anal-step3-footer">
+          <button class="btn-sm" id="btn-add-topico-manual">+ Adicionar tópico manualmente</button>
+          <button class="btn-primary" id="btn-salvar-final">Salvar na matéria →</button>
         </div>
       </div>
-    </div>`;
-}
+    </div>
+    </div><!-- /anal-corpo -->
+  </div>
 
-function renderTopicosFlat(topicos, materiaId) {
-  if (!topicos.length) return '<div class="topico-vazio">Nenhum tópico</div>';
-
-  // Agrupar em hierarquia por nivel + parentId
-  const byId = {};
-  topicos.forEach(t => byId[t.id] = { ...t, _filhos: [] });
-  const raizes = [];
-  topicos.forEach(t => {
-    if (t.parentId && byId[t.parentId]) byId[t.parentId]._filhos.push(byId[t.id]);
-    else raizes.push(byId[t.id]);
-  });
-
-  function renderNo(t, depth = 0) {
-    const indent = depth * 18;
-    const statusIcon = { dominado: '✓', estudando: '◐', nao_estudado: '○' }[t.status] || '○';
-    const statusClass = t.status || 'nao_estudado';
-
-    return `
-      <div class="topico-row status-${statusClass}"
-           data-topico-id="${t.id}" data-materia-id="${materiaId}"
-           style="padding-left:${indent + 16}px">
-        <button class="status-cycle-btn status-icon-${statusClass}"
-                data-mid="${materiaId}" data-tid="${t.id}"
-                title="Clique para mudar status">${statusIcon}</button>
-        <span class="nivel-tag n${t.nivel || 1}">T${t.nivel || 1}</span>
-        <span class="topico-texto">${t.texto}</span>
-        <span class="topico-edit-hint">editar ›</span>
+  <!-- MATÉRIAS -->
+  <div id="page-materias" class="page">
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">Banco de matérias</h2>
+        <p class="page-sub">Clique em qualquer tópico para editar, mudar de matéria ou ajustar a hierarquia.</p>
       </div>
-      ${t._filhos.length ? t._filhos.map(f => renderNo(f, depth+1)).join('') : ''}`;
-  }
+      <div class="page-header-right">
+        <button class="btn-sm" id="btn-export-json">Exportar JSON</button>
+        <button class="btn-primary btn-sm-h" id="btn-nova-materia">+ Nova matéria</button>
+      </div>
+    </div>
 
-  return raizes.map(t => renderNo(t)).join('');
-}
+    <div class="filters-bar">
+      <div class="search-wrap">
+        <svg class="search-ic" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="6" cy="6" r="4.5" stroke="#9CA3AF" stroke-width="1.3"/>
+          <path d="M9.5 9.5L12 12" stroke="#9CA3AF" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        <input type="text" id="search-mat" class="search-input" placeholder="Buscar matéria ou tópico..."/>
+      </div>
+      <div class="status-pills">
+        <button class="status-pill active" data-s="all">Todos</button>
+        <button class="status-pill" data-s="nao_estudado">Não estudado</button>
+        <button class="status-pill" data-s="estudando">Estudando</button>
+        <button class="status-pill" data-s="dominado">Dominado</button>
+      </div>
+      <select id="sort-mat" class="sort-sel">
+        <option value="nome">A – Z</option>
+        <option value="topicos">Mais tópicos</option>
+        <option value="dom">Mais dominado</option>
+      </select>
+    </div>
 
-// ── ciclico de status (clique rápido) ─────────────
-const STATUS_CYCLE = ['nao_estudado', 'estudando', 'dominado'];
-async function ciclicStatusTopico(materiaId, topicoId) {
-  const mat = State.materias.find(m => m.id === materiaId);
-  if (!mat) return;
-  const top = mat.topicos.find(t => t.id === topicoId);
-  if (!top) return;
-  const idx = STATUS_CYCLE.indexOf(top.status || 'nao_estudado');
-  top.status = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
-  await updateMateria(materiaId, { topicos: mat.topicos });
-  renderMaterias();
-  import('./page-home.js').then(m => m.renderHome());
-}
+    <div id="materias-list" class="materias-list"></div>
+    <div id="materias-empty" class="empty-state hidden">
+      <div class="empty-ico">📚</div>
+      <p class="empty-title">Nenhuma matéria ainda</p>
+      <p class="empty-sub">Analise um edital para preencher automaticamente.</p>
+      <button class="btn-primary" onclick="import('./js/app.js').then(m=>m.goPage('analisar'))">Analisar edital</button>
+    </div>
+  </div>
 
-// ── modal de tópico ────────────────────────────────
-function setupModalTopico() {
-  document.getElementById('mt-close')?.addEventListener('click', () =>
-    document.getElementById('modal-topico').classList.add('hidden'));
-  document.getElementById('mt-save')?.addEventListener('click', salvarTopico);
-  document.getElementById('mt-del')?.addEventListener('click', deletarTopicoModal);
+  <!-- CRONOGRAMA -->
+  <div id="page-cronograma" class="page">
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">Cronograma de estudos</h2>
+        <p class="page-sub">A IA cria um plano personalizado com base no seu tempo disponível e na data da prova.</p>
+      </div>
+      <button class="btn-sm" id="btn-reimprimir" style="display:none">🖨 Imprimir</button>
+    </div>
 
-  document.querySelectorAll('.status-btn').forEach(btn =>
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    })
-  );
-}
+    <!-- Form de configuração -->
+    <div id="cron-form" class="cron-form-card">
+      <div class="cron-form-grid">
+        <div class="cron-field">
+          <label class="field-label">Horas de estudo por dia</label>
+          <input type="number" id="cron-horas" class="field-input" value="2" min="1" max="12"/>
+        </div>
+        <div class="cron-field">
+          <label class="field-label">Dias da semana que estudo</label>
+          <div class="dias-grid">
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Segunda" checked/><span>Seg</span></label>
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Terça" checked/><span>Ter</span></label>
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Quarta" checked/><span>Qua</span></label>
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Quinta" checked/><span>Qui</span></label>
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Sexta" checked/><span>Sex</span></label>
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Sábado"/><span>Sáb</span></label>
+            <label class="dia-label"><input type="checkbox" class="dia-check" value="Domingo"/><span>Dom</span></label>
+          </div>
+        </div>
+        <div class="cron-field cron-field-full">
+          <label class="field-label">Matérias que já tenho base (a IA dará menos tempo)</label>
+          <div id="domina-list" class="domina-list"></div>
+        </div>
+      </div>
+      <div class="cron-form-footer">
+        <div id="cron-loading" class="loading-block hidden" style="padding:0;flex-direction:row;gap:10px">
+          <div class="loading-dots" style="gap:4px"><span></span><span></span><span></span></div>
+          <span class="loading-msg" style="font-size:13px">Gerando cronograma...</span>
+        </div>
+        <button class="btn-primary" id="btn-gerar-cronograma">Gerar cronograma →</button>
+      </div>
+    </div>
 
-function abrirModalTopico(materiaId, topicoId) {
-  const mat = State.materias.find(m => m.id === materiaId);
-  if (!mat) return;
-  const top = mat.topicos.find(t => t.id === topicoId);
-  if (!top) return;
+    <!-- Resultado -->
+    <div id="cron-resultado" class="hidden">
+      <div class="cron-resumo-grid">
+        <div class="cron-stat"><span class="cron-stat-val" id="cron-total-semanas">—</span><span class="cron-stat-lbl">semanas</span></div>
+        <div class="cron-stat"><span class="cron-stat-val" id="cron-horas-semana">—</span><span class="cron-stat-lbl">por semana</span></div>
+        <div class="cron-stat"><span class="cron-stat-val" id="cron-total-horas">—</span><span class="cron-stat-lbl">total de horas</span></div>
+        <div class="cron-dica" id="cron-dica-banca"></div>
+      </div>
+      <div id="cron-semanas-grid" class="cron-semanas-grid"></div>
+      <div class="cron-actions">
+        <button class="btn-sm" onclick="document.getElementById('cron-form').classList.remove('hidden');document.getElementById('cron-resultado').classList.add('hidden')">Refazer cronograma</button>
+      </div>
+    </div>
+  </div>
 
-  modalCtx = { tipo: 'topico', materiaId, topicoId };
+</main>
 
-  document.getElementById('mt-texto').value = top.texto;
-  document.getElementById('mt-nivel').value = top.nivel || 1;
+<!-- ───────── MODAL: CONCURSO ──────────────────── -->
+<div id="modal-concurso" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-head"><h3 class="modal-title" id="mc-title">Novo concurso</h3><button class="modal-x" id="mc-close">✕</button></div>
+    <div class="modal-body">
+      <label class="field-label">Nome do concurso *</label>
+      <input type="text" id="mc-nome" class="field-input" placeholder="Ex: Prefeitura de São Paulo 2025"/>
+      <label class="field-label" style="margin-top:14px">Banca organizadora</label>
+      <input type="text" id="mc-banca" class="field-input" placeholder="Ex: VUNESP, CESPE, FCC..."/>
+      <label class="field-label" style="margin-top:14px">Cargo</label>
+      <input type="text" id="mc-cargo" class="field-input" placeholder="Ex: Analista Administrativo"/>
+      <label class="field-label" style="margin-top:14px">Data da prova</label>
+      <input type="date" id="mc-data" class="field-input"/>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-danger-sm" id="mc-del" style="display:none">Excluir</button>
+      <button class="btn-primary" id="mc-save">Salvar</button>
+    </div>
+  </div>
+</div>
 
-  // select de matéria
-  const sel = document.getElementById('mt-materia');
-  sel.innerHTML = State.materias
-    .map(m => `<option value="${m.id}" ${m.id === materiaId ? 'selected' : ''}>${m.nome}</option>`)
-    .join('');
+<!-- ───────── MODAL: TÓPICO ────────────────────── -->
+<div id="modal-topico" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-head"><h3 class="modal-title">Editar tópico</h3><button class="modal-x" id="mt-close">✕</button></div>
+    <div class="modal-body">
+      <label class="field-label">Texto</label>
+      <input type="text" id="mt-texto" class="field-input"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+        <div>
+          <label class="field-label">Matéria</label>
+          <select id="mt-materia" class="field-input"></select>
+        </div>
+        <div>
+          <label class="field-label">Nível (hierarquia)</label>
+          <select id="mt-nivel" class="field-input">
+            <option value="1">T1 — Título</option>
+            <option value="2">T2 — Subtítulo</option>
+            <option value="3">T3 — Sub-subtítulo</option>
+          </select>
+        </div>
+      </div>
+      <label class="field-label" style="margin-top:16px">Status de estudo</label>
+      <div class="status-picker">
+        <button class="status-btn" data-st="nao_estudado">○ Não estudado</button>
+        <button class="status-btn" data-st="estudando">◐ Estudando</button>
+        <button class="status-btn" data-st="dominado">✓ Dominado</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-danger-sm" id="mt-del">Excluir tópico</button>
+      <button class="btn-primary" id="mt-save">Salvar</button>
+    </div>
+  </div>
+</div>
 
-  // status
-  document.querySelectorAll('.status-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.st === (top.status || 'nao_estudado'))
-  );
+<!-- ───────── MODAL: MATÉRIA ───────────────────── -->
+<div id="modal-materia" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-head"><h3 class="modal-title" id="mm-title">Nova matéria</h3><button class="modal-x" id="mm-close">✕</button></div>
+    <div class="modal-body">
+      <label class="field-label">Nome da matéria</label>
+      <input type="text" id="mm-nome" class="field-input" placeholder="Ex: Direito Constitucional"/>
+      <label class="field-label" style="margin-top:14px">Vincular a concurso</label>
+      <select id="mm-concurso" class="field-input">
+        <option value="">🌐 Global (todos os concursos)</option>
+      </select>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-danger-sm" id="mm-del" style="display:none">Excluir</button>
+      <button class="btn-primary" id="mm-save">Salvar</button>
+    </div>
+  </div>
+</div>
 
-  document.getElementById('modal-topico').classList.remove('hidden');
-}
+<!-- ───────── TOAST ─────────────────────────────── -->
+<div id="toast" class="toast"></div>
 
-async function salvarTopico() {
-  const { materiaId, topicoId } = modalCtx;
-  const texto      = document.getElementById('mt-texto').value.trim();
-  const nivel      = parseInt(document.getElementById('mt-nivel').value) || 1;
-  const novaMateriaId = document.getElementById('mt-materia').value;
-  const status     = document.querySelector('.status-btn.active')?.dataset.st || 'nao_estudado';
-
-  if (!texto) { showToast('Texto não pode ser vazio.','warn'); return; }
-
-  const velha = State.materias.find(m => m.id === materiaId);
-  const nova  = State.materias.find(m => m.id === novaMateriaId);
-  const idxTop = velha.topicos.findIndex(t => t.id === topicoId);
-
-  const topicoAtualizado = { ...velha.topicos[idxTop], texto, nivel, status };
-
-  if (materiaId === novaMateriaId) {
-    velha.topicos[idxTop] = topicoAtualizado;
-    await updateMateria(materiaId, { topicos: velha.topicos });
-  } else {
-    velha.topicos.splice(idxTop, 1);
-    await updateMateria(materiaId, { topicos: velha.topicos });
-    nova.topicos.push(topicoAtualizado);
-    await updateMateria(novaMateriaId, { topicos: nova.topicos });
-  }
-
-  document.getElementById('modal-topico').classList.add('hidden');
-  renderMaterias();
-  import('./page-home.js').then(m => m.renderHome());
-  showToast('Tópico salvo!', 'success');
-}
-
-async function deletarTopicoModal() {
-  if (!confirm('Excluir este tópico?')) return;
-  const { materiaId, topicoId } = modalCtx;
-  const mat = State.materias.find(m => m.id === materiaId);
-  mat.topicos = mat.topicos.filter(t => t.id !== topicoId);
-  await updateMateria(materiaId, { topicos: mat.topicos });
-  document.getElementById('modal-topico').classList.add('hidden');
-  renderMaterias();
-  showToast('Tópico excluído.', 'default');
-}
-
-async function adicionarTopico(materiaId) {
-  const texto = prompt('Texto do novo tópico:');
-  if (!texto?.trim()) return;
-  const nivel = parseInt(prompt('Nível (1 = título, 2 = subtítulo, 3 = sub-subtítulo):', '2')) || 2;
-  const mat = State.materias.find(m => m.id === materiaId);
-  if (!mat) return;
-  mat.topicos.push({ id: uid(), texto: texto.trim(), nivel, status: 'nao_estudado', parentId: null });
-  await updateMateria(materiaId, { topicos: mat.topicos });
-  renderMaterias();
-  showToast('Tópico adicionado!', 'success');
-}
-
-// ── modal de matéria ───────────────────────────────
-let _editMateriaId = null;
-
-function setupModalMateria() {
-  document.getElementById('mm-close')?.addEventListener('click', () =>
-    document.getElementById('modal-materia').classList.add('hidden'));
-  document.getElementById('mm-save')?.addEventListener('click', salvarMateria);
-  document.getElementById('mm-del')?.addEventListener('click', deletarMateriaModal);
-}
-
-function abrirModalMateria(id) {
-  _editMateriaId = id;
-  const m = id ? State.materias.find(x => x.id === id) : null;
-  document.getElementById('mm-title').textContent = m ? 'Editar matéria' : 'Nova matéria';
-  document.getElementById('mm-nome').value = m?.nome || '';
-  document.getElementById('mm-del').style.display = m ? 'inline-flex' : 'none';
-
-  // popular select de concursos
-  const sel = document.getElementById('mm-concurso');
-  if (sel) {
-    sel.innerHTML = `<option value="">🌐 Global (todos os concursos)</option>` +
-      State.concursos.map(c =>
-        `<option value="${c.id}" ${m?.concursoId === c.id ? 'selected' : ''}>${c.nome}</option>`
-      ).join('');
-    if (!m?.concursoId) sel.value = '';
-  }
-
-  document.getElementById('modal-materia').classList.remove('hidden');
-}
-
-async function salvarMateria() {
-  const nome = document.getElementById('mm-nome').value.trim();
-  if (!nome) { showToast('Informe o nome.','warn'); return; }
-  const c = State.concursoAtivo;
-
-  if (_editMateriaId) {
-    const mat = State.materias.find(m => m.id === _editMateriaId);
-    mat.nome = nome;
-    await updateMateria(_editMateriaId, { nome });
-  } else {
-    const cor = CORES[State.materias.length % CORES.length];
-    const ref = await addMateria({ concursoId: c?.id || '', nome, cor, topicos: [] });
-    State.materias.push({ id: ref.id, concursoId: c?.id || '', nome, cor, topicos: [] });
-  }
-
-  document.getElementById('modal-materia').classList.add('hidden');
-  renderMaterias();
-  import('./page-home.js').then(m => m.renderHome());
-  showToast('Matéria salva!', 'success');
-}
-
-async function deletarMateriaModal() {
-  if (!confirm('Excluir esta matéria e todos os seus tópicos?')) return;
-  await deleteMateria(_editMateriaId);
-  State.materias = State.materias.filter(m => m.id !== _editMateriaId);
-  document.getElementById('modal-materia').classList.add('hidden');
-  renderMaterias();
-  import('./page-home.js').then(m => m.renderHome());
-  showToast('Matéria excluída.', 'default');
-}
-
-function exportarJSON() {
-  const data = JSON.stringify(State.materias, null, 2);
-  const blob = new Blob([data], { type: 'application/json' });
-  const url  = URL.createObjectURL(blob);
-  Object.assign(document.createElement('a'), { href: url, download: 'materias.json' }).click();
-  URL.revokeObjectURL(url);
-  showToast('JSON exportado!', 'success');
-}
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

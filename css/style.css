@@ -391,3 +391,5 @@ textarea::placeholder{color:var(--t3)}
 .anal-aviso-ico{font-size:2.5rem;margin-bottom:1rem}
 .anal-aviso-title{font-size:16px;font-weight:600;margin-bottom:6px}
 .anal-aviso-sub{font-size:14px;color:var(--t2);max-width:380px;margin:0 auto;line-height:1.7}
+
+.uso-badge { display: none !important; }

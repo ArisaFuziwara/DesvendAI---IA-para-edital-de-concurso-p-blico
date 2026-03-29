@@ -180,7 +180,7 @@ export function atualizarBadgeUso() {
 }
 
 // ── bootstrap ──────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
+async function inicializarApp() {
   // expor firebase globalmente para módulos que precisam
   const fb = await import('./firebase.js');
   window._fb = fb;
@@ -213,8 +213,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   initHome();
 
   goPage('home');
-  
+
   // re-renderizar home agora que tudo está carregado
   const { renderHome } = await import('./page-home.js');
   renderHome();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // só inicializa se já estiver logado
+  if (sessionStorage.getItem('es_logado') === '1') inicializarApp();
 });
+
+// inicializa após login bem-sucedido
+document.addEventListener('loginOk', () => inicializarApp());

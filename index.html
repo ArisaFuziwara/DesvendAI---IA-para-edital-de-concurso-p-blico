@@ -102,51 +102,83 @@
   <div id="page-analisar" class="page">
     <div class="page-header">
       <div>
-        <h2 class="page-title">Analisar edital</h2>
-        <p class="page-sub">Cole os tópicos — a IA detecta matérias e monta a hierarquia T1 / T2 / T3.</p>
+        <h2 class="page-title">Adicionar tópicos</h2>
+        <p class="page-sub">Selecione a matéria, cole o conteúdo do edital e organize arrastando.</p>
       </div>
     </div>
 
-    <div class="input-card">
-      <div class="input-card-top">
-        <span class="input-card-label">Tópicos do edital</span>
-        <span class="char-count" id="char-count">0 caracteres</span>
-      </div>
-      <textarea id="topicos-input" placeholder="Cole aqui os tópicos do edital. Pode ser qualquer formato — com numeração, travessão, parênteses, do jeito que vier no PDF.
-
-Exemplos:
-1. Direito Constitucional
-   1.1 Princípios Fundamentais
-      1.1.1 Dignidade da pessoa humana
-      1.1.2 Cidadania e soberania
-   1.2 Direitos e Garantias Fundamentais
-2. Língua Portuguesa
-   2.1 Concordância verbal e nominal
-   2.2 Regência verbal
-Noções de Informática: Word, Excel, Internet, Segurança"></textarea>
-      <div class="input-footer">
-        <label class="check-row">
-          <input type="checkbox" id="check-add-banco" checked/>
-          <span>Adicionar tópicos ao banco de matérias</span>
-        </label>
-        <button class="btn-primary" id="btn-analisar">Analisar →</button>
-      </div>
-    </div>
-
-    <div id="loading-block" class="loading-block hidden">
-      <div class="loading-dots"><span></span><span></span><span></span></div>
-      <p class="loading-msg" id="loading-msg">Lendo o edital...</p>
-    </div>
-
-    <div id="results-block" class="hidden">
-      <div class="results-bar">
-        <div class="results-meta" id="results-meta"></div>
-        <div style="display:flex;gap:8px">
-          <button class="btn-sm" id="btn-copiar-resumo">Copiar texto</button>
-          <button class="btn-sm btn-accent-sm" id="btn-salvar-hist">Salvar</button>
+    <!-- STEP 1: selecionar matéria -->
+    <div class="anal-step-card">
+      <div class="anal-step-num">1</div>
+      <div class="anal-step-body">
+        <div class="anal-step-title">Selecione a matéria</div>
+        <div class="anal-mat-row">
+          <div id="mat-placeholder" class="mat-placeholder">Nenhuma matéria selecionada</div>
+          <div id="mat-selecionada-info" class="mat-selecionada-info hidden">
+            <div class="mat-sel-dot" id="mat-sel-dot"></div>
+            <span class="mat-sel-nome" id="mat-sel-nome"></span>
+            <span class="mat-sel-count" id="mat-sel-count"></span>
+          </div>
+          <div class="anal-mat-btns">
+            <div style="position:relative">
+              <button class="btn-primary" id="btn-selecionar-mat">Selecionar →</button>
+              <div id="mat-dropdown" class="mat-dropdown hidden"></div>
+            </div>
+            <button class="btn-outline" id="btn-criar-mat-anal">+ Nova matéria</button>
+          </div>
         </div>
       </div>
-      <div id="results-cards"></div>
+    </div>
+
+    <!-- STEP 2: colar conteúdo -->
+    <div class="anal-step-card hidden" id="anal-step2">
+      <div class="anal-step-num">2</div>
+      <div class="anal-step-body">
+        <div class="anal-step-title">Cole o conteúdo do edital para esta matéria</div>
+        <div class="input-card" style="margin-bottom:0">
+          <div class="input-card-top">
+            <span class="input-card-label">Tópicos</span>
+            <span class="char-count" id="char-count">0 caracteres</span>
+          </div>
+          <textarea id="topicos-input" placeholder="Cole aqui os tópicos desta matéria. Pode ter numeração, recuo, qualquer formato.
+
+Ex:
+1. Princípios Fundamentais
+   1.1 Dignidade da pessoa humana
+   1.2 Cidadania e soberania
+2. Direitos e Garantias Fundamentais
+   2.1 Direitos individuais
+   2.2 Direitos coletivos"></textarea>
+          <div class="input-footer">
+            <span></span>
+            <button class="btn-primary" id="btn-processar">Processar →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: editor drag-and-drop -->
+    <div class="anal-step-card hidden" id="anal-step3">
+      <div class="anal-step-num">3</div>
+      <div class="anal-step-body">
+        <div class="anal-step-title-row">
+          <span class="anal-step-title">Organize e revise</span>
+          <span class="parse-count" id="parse-count"></span>
+        </div>
+        <p class="anal-step-hint">Arraste para reordenar · Clique no <strong>T1/T2/T3</strong> para mudar o nível · Clique no texto para editar</p>
+
+        <!-- existentes -->
+        <div id="existentes-block"></div>
+
+        <!-- novos editáveis -->
+        <div class="edit-novos-label">Novos tópicos a adicionar</div>
+        <div id="topicos-editaveis" class="topicos-editaveis"></div>
+
+        <div class="anal-step3-footer">
+          <button class="btn-sm" id="btn-add-topico-manual">+ Adicionar tópico manualmente</button>
+          <button class="btn-primary" id="btn-salvar-final">Salvar na matéria →</button>
+        </div>
+      </div>
     </div>
   </div>
 

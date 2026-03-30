@@ -118,8 +118,12 @@ export function renderMaterias() {
 }
 
 function filtrarTopicos(topicos = []) {
-  if (filtroStatus === 'all') return topicos;
-  return topicos.filter(t => t.status === filtroStatus);
+  const c = State.concursoAtivo;
+  // filtrar por concurso: global (sem concursoId) sempre aparece
+  // tópico específico só aparece no concurso dele
+  let lista = topicos.filter(t => !t.concursoId || !c || t.concursoId === c.id);
+  if (filtroStatus !== 'all') lista = lista.filter(t => t.status === filtroStatus);
+  return lista;
 }
 
 function renderBadgeConcurso(m) {
@@ -229,9 +233,14 @@ function propagarStatus(topicos, parentId, status) {
   topicos.forEach(t => {
     if (t.parentId === parentId) {
       t.status = status;
-      propagarStatus(topicos, t.id, status); // recursivo
+      propagarStatus(topicos, t.id, status);
     }
   });
+}
+
+function filhosDoTopico(topicos, parentId) {
+  const diretos = topicos.filter(t => t.parentId === parentId);
+  return diretos.reduce((acc, t) => [...acc, t, ...filhosDoTopico(topicos, t.id)], []);
 }
 
 // ── modal de tópico ────────────────────────────────
@@ -266,6 +275,16 @@ function abrirModalTopico(materiaId, topicoId) {
     .map(m => `<option value="${m.id}" ${m.id === materiaId ? 'selected' : ''}>${m.nome}</option>`)
     .join('');
 
+  // popular select de concurso do tópico
+  const selC = document.getElementById('mt-concurso');
+  if (selC) {
+    selC.innerHTML = '<option value="">🌐 Global (aparece em todos)</option>' +
+      State.concursos.map(c =>
+        `<option value="${c.id}" ${top.concursoId === c.id ? 'selected' : ''}>${c.nome}</option>`
+      ).join('');
+    if (!top.concursoId) selC.value = '';
+  }
+
   // status
   document.querySelectorAll('.status-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.st === (top.status || 'nao_estudado'))
@@ -276,10 +295,11 @@ function abrirModalTopico(materiaId, topicoId) {
 
 async function salvarTopico() {
   const { materiaId, topicoId } = modalCtx;
-  const texto      = document.getElementById('mt-texto').value.trim();
-  const nivel      = parseInt(document.getElementById('mt-nivel').value) || 1;
+  const texto         = document.getElementById('mt-texto').value.trim();
+  const nivel         = parseInt(document.getElementById('mt-nivel').value) || 1;
   const novaMateriaId = document.getElementById('mt-materia').value;
-  const status     = document.querySelector('.status-btn.active')?.dataset.st || 'nao_estudado';
+  const status        = document.querySelector('.status-btn.active')?.dataset.st || 'nao_estudado';
+  const topConcursoId = document.getElementById('mt-concurso')?.value || '';
 
   if (!texto) { showToast('Texto não pode ser vazio.','warn'); return; }
 
@@ -287,7 +307,7 @@ async function salvarTopico() {
   const nova  = State.materias.find(m => m.id === novaMateriaId);
   const idxTop = velha.topicos.findIndex(t => t.id === topicoId);
 
-  const topicoAtualizado = { ...velha.topicos[idxTop], texto, nivel, status };
+  const topicoAtualizado = { ...velha.topicos[idxTop], texto, nivel, status, concursoId: topConcursoId };
 
   if (materiaId === novaMateriaId) {
     velha.topicos[idxTop] = topicoAtualizado;

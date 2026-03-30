@@ -117,6 +117,9 @@ function processarColagem() {
 
   topicosParsed = parsearTopicos(texto);
   if (!topicosParsed.length) { showToast('Nenhum tópico encontrado.', 'warn'); return; }
+  // vincular tópicos ao concurso ativo
+  const concursoIdAtivo = State.concursoAtivo?.id || '';
+  topicosParsed.forEach(t => { t.concursoId = concursoIdAtivo; });
 
   renderStep3();
   document.getElementById('anal-step3').classList.remove('hidden');
@@ -290,8 +293,18 @@ async function salvarFinal() {
     showToast('Nada pra salvar.', 'warn'); return;
   }
 
-  const existSet = new Set(materiaSelecionada.topicos.map(t => norm(t.texto)));
-  const novos    = topicosParsed.filter(t => !existSet.has(norm(t.texto)));
+  // comparação robusta: ignora pontuação, espaços extras e case
+  function normRobusto(s) {
+    return (s || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[.,;:!?]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  const existSet = new Set(materiaSelecionada.topicos.map(t => normRobusto(t.texto)));
+  const novos = topicosParsed
+    .filter(t => !existSet.has(normRobusto(t.texto)))
+    .map(t => ({ ...t, concursoId: State.concursoAtivo?.id || '' }));
 
   materiaSelecionada.topicos.push(...novos);
   await updateMateria(materiaSelecionada.id, { topicos: materiaSelecionada.topicos });
